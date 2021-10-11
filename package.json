@@ -33,6 +33,7 @@
     "gendocs": "jsdoc2md --files src/*.ts --template README.template.md --configure ./jsdoc2md.json  > README.md"
   },
   "devDependencies": {
+    "ts-node": "^10.3.0",
     "typescript": "^4.1.3"
   },
   "files": [
