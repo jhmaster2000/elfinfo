@@ -196,7 +196,7 @@ export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF
                 }
             }
         }
-    } catch (e) {
+    } catch (e: any) {
         errors.push(`Exception caught: ${e.toString()}`);
     }
 
@@ -204,7 +204,7 @@ export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF
     if (reader) {
         try {
             await reader.close();
-        } catch (e) {
+        } catch (e: any) {
             errors.push(`Exception caught: ${e.toString()}`);
         }
     }
