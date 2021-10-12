@@ -271,7 +271,7 @@ function fillInSectionHeaderNames(sections: ELFSection[], eSHStrNdx: number) {
             if (strs) {
                 sections.forEach(v => {
                     if (v.nameix == 0) {
-                        v.name = "<null>";
+                        v.name = v.type ? "SECTION" + v.index : "<null>";
                     } else {
                         const name = getString(strs, v.nameix);
                         if (name) {

@@ -532,7 +532,7 @@ export interface ELFSymbol {
      */
     shndx: number;
 
-    /** The calculated virtaul address for the symbol, if possible */
+    /** The calculated virtual address for the symbol, if possible */
     virtualAddress?: number | bigint;
     /** The data for the symbol, if any and if it was specified to be loaded */
     data?: Uint8Array;
