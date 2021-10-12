@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static volatile char* usart_dr = reinterpret_cast<char*>(0x4000c000);
+static volatile char* usart_dr = reinterpret_cast<char*>(0x4000C000);
 
 extern "C"
 {

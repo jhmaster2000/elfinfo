@@ -84,7 +84,7 @@ async function readSymbolsSection(fh: Reader, offset: number, size: number,
             value = readUInt64(ix); ix += 8;
             size = Number(readUInt64(ix)); ix += 8;
         }
-        const type = info & 0xf;
+        const type = info & 0xF;
         const binding = info >> 4;
         const visibility = other & 3;
 
@@ -134,7 +134,7 @@ async function readRelocationSection(fh: Reader, offset: number, size: number,
                 addend = readSInt32(ix); ix += 4;
             }
             symbolIndex = info >> 8;
-            type = info & 0xff;
+            type = info & 0xFF;
         } else {
             addr = readUInt64(ix); ix += 8;
             info = readUInt64(ix); ix += 8;
@@ -142,7 +142,7 @@ async function readRelocationSection(fh: Reader, offset: number, size: number,
                 addend = readSInt64(ix); ix += 8;
             }
             symbolIndex = toNumberSafe(info >> BigInt(32));
-            type = toNumberSafe(info & BigInt(0xffffffff));
+            type = toNumberSafe(info & BigInt(0xFFFFFFFF));
         }
 
         relocations[i] = {

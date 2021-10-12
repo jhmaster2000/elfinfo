@@ -527,7 +527,7 @@ export interface ELFSymbol {
     visibilityDescription: string;
     /** Section index for this symbol.
      * @summary This is the index of the section for this symbol. There
-     * are also special values such as 0xfff1 for an absolute index symbol
+     * are also special values such as 0xFFF1 for an absolute index symbol
      * in a relocatable ELF file (object file).
      */
     shndx: number;

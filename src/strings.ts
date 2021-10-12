@@ -281,7 +281,7 @@ export function programHeaderFlagsToString(flags: number) {
 
 export function elfFlagsToString(isa: ISA, flags: number): string {
     if (isa === ISA.ARM) {
-        const ver = ((flags & 0xff000000) >> 24);
+        const ver = ((flags & 0xFF000000) >> 24);
         let str = [`Version: ${ver}`];
 
         if (flags & 0x00800000)             str.push('BE-8');

@@ -25,7 +25,7 @@ async function updateSymbolAddressesAndLoadSymbols(elf: ELF, reader: Reader, loa
                         if (symbol.shndx < elf.sections.length) {
                             // offset is from start of section
                             symbol.virtualAddress = add(symbol.value, elf.sections[symbol.shndx].addr);
-                        } else if (symbol.shndx == 0xfff1) {
+                        } else if (symbol.shndx == 0xFFF1) {
                             // SHN_ABS
                             symbol.virtualAddress = symbol.value;
                         }
@@ -69,9 +69,9 @@ export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF
         } else {
             const view = await reader.view(16);
 
-            const magic = 0x464c457f;
+            const magic = 0x464C457F;
             if (view.getInt32(0, true) !== magic) {
-                warnings.push("Not a valid ELF file. The file does not start with 0x7f ELF.");
+                warnings.push("Not a valid ELF file. The file does not start with 0x7F ELF.");
             }
 
             const eiClass = view.getUint8(4);
@@ -137,13 +137,13 @@ export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF
 
                 if (ePHNum != 0 && ((bits == 32 && ePHEntSize < 0x20) ||
                     (bits == 64 && ePHEntSize < 0x38) ||
-                    (ePHEntSize > 0xff))) {
+                    (ePHEntSize > 0xFF))) {
                     errors.push("Invalid ELF file. Program header entry size invalid");
                 }
 
                 if (eSHNum != 0 && ((bits == 32 && eSHEntSize < 0x28) ||
                     (bits == 64 && eSHEntSize < 0x40) ||
-                    (ePHEntSize > 0xff))) {
+                    (ePHEntSize > 0xFF))) {
                     errors.push("Invalid ELF file. Section header entry size invalid");
                 }
 
