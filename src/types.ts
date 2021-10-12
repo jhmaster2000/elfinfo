@@ -220,7 +220,8 @@ export enum ObjectType {
     Relocatable = 0x01,
     Executable  = 0x02,
     Shared      = 0x03,
-    Core        = 0x04
+    Core        = 0x04,
+    RPL         = 0xFE01
 }
 
 /**
