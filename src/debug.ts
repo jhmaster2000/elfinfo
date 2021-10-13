@@ -2,6 +2,12 @@ import { isRelocationSection, isStringSection, isSymbolSection } from './section
 import { SectionHeaderEntryType, ELFOpenResult } from './types';
 import { ELF } from './types';
 
+export function hexdump(buf: Buffer): string {
+    const basestr = buf.toString('hex').toUpperCase();
+    if (!basestr) return '';
+    return basestr.match(/../g)!.join(' ').match(/(?:...?){1,16}/g)!.join('\n');
+}
+
 function toHex(n: number | bigint | undefined, padamount: number = 0, lowercase: boolean = false) {
     if (n !== undefined) {
         const hexchars = n.toString(16);
