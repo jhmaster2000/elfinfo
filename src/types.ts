@@ -244,61 +244,61 @@ export enum ProgramHeaderEntryType {
  * The type of section.
  */
 export enum SectionHeaderEntryType {
-    /** Inactive section with undefined values */
+    /** Inactive section with undefined values (SHT_NULL) */
     Null          = 0x00,
-    /** Information defined by the program, includes executable code and data */
+    /** Information defined by the program, includes executable code and data (SHT_PROGBITS) */
     ProgBits      = 0x01,
-    /** Section data contains a symbol table */
+    /** Section data contains a symbol table (SHT_SYMTAB) */
     SymTab        = 0x02,
-    /** Section data contains a string table */
+    /** Section data contains a string table (SHT_STRTAB) */
     StrTab        = 0x03,
-    /** Section data contains relocation entries with explicit addends */
+    /** Section data contains relocation entries with explicit addends (SHT_RELA) */
     Rela          = 0x04,
-    /** Section data contains a symbol hash table. Must be present for dynamic linking */
+    /** Section data contains a symbol hash table. Must be present for dynamic linking (SHT_HASH) */
     Hash          = 0x05,
-    /** Section data contains information for dynamic linking */
+    /** Section data contains information for dynamic linking (SHT_DYNAMIC) */
     Dynamic       = 0x06,
-    /** Section data contains information that marks the file in some way */
+    /** Section data contains information that marks the file in some way (SHT_NOTE) */
     Note          = 0x07,
-    /** Section data occupies no space in the file but otherwise resembles SHT_PROGBITS */
+    /** Section data occupies no space in the file but otherwise resembles SHT_PROGBITS (SHT_NOBITS) */
     NoBits        = 0x08,
-    /** Section data contains relocation entries without explicit addends */
+    /** Section data contains relocation entries without explicit addends (SHT_REL) */
     Rel           = 0x09,
-    /** Section is reserved but has unspecified semantics */
+    /** Section is reserved but has unspecified semantics (SHT_SHLIB) */
     ShLib         = 0x0A,
-    /** Section data contains a minimal set of dynamic linking symbols */
+    /** Section data contains a minimal set of dynamic linking symbols (SHT_DYNSYM) */
     DynSym        = 0x0B,
-    /** Section data contains an array of constructors */
+    /** Section data contains an array of constructors (SHT_INIT_ARRAY) */
     InitArray     = 0x0E,
-    /** Section data contains an array of destructors */
+    /** Section data contains an array of destructors (SHT_FINI_ARRAY) */
     FiniArray     = 0x0F,
-    /** Section data contains an array of pre-constructors */
+    /** Section data contains an array of pre-constructors (SHT_PREINIT_ARRAY) */
     PreInitArray  = 0x10,
-    /** Section group */
+    /** Section group (SHT_GROUP) */
     Group         = 0x11,
-    /** Extended symbol table section index */
+    /** Extended symbol table section index (SHT_SYMTAB_SHNDX) */
     ShNdx         = 0x12,
-    /** Number of reserved SHT_* values */
+    /** Number of reserved SHT_* values (SHT_NUM) */
     Num           = 0x13,
-    /** Object attributes */
+    /** Object attributes (SHT_GNU_ATTRIBUTES) */
     GnuAttributes = 0x6FFFFFF5,
-    /** GNU-style hash section */
+    /** GNU-style hash section (SHT_GNU_HASH) */
     GnuHash       = 0x6FFFFFF6,
-    /** Pre-link library list */
+    /** Pre-link library list (SHT_GNU_LIBLIST) */
     GnuLibList    = 0x6FFFFFF7,
-    /** Version definition section */
+    /** Version definition section (SHT_GNU_verdef) */
     GnuVerDef     = 0x6FFFFFFD,
-    /** Version needs section */
+    /** Version needs section (SHT_GNU_verdneed) */
     GnuVerNeed    = 0x6FFFFFFE,
-    /** Version symbol table */
+    /** Version symbol table (SHT_GNU_versym) */
     GnuVerSym     = 0x6FFFFFFF,
-    /** RPL exports table */
+    /** RPL exports table (SHT_RPL_EXPORTS) */
     RPLExports    = 0x80000001,
-    /** RPL imports table */
+    /** RPL imports table (SHT_RPL_IMPORTS) */
     RPLImports    = 0x80000002,
-    /** RPL file CRC hashes */
+    /** RPL file CRC hashes (SHT_RPL_CRCS) */
     RPLCrcs       = 0x80000003,
-    /** RPL file information */
+    /** RPL file information (SHT_RPL_FILEINFO) */
     RPLFileInfo   = 0x80000004
 }
 
@@ -495,6 +495,52 @@ export interface ELFSymbolSection extends ELFSection {
 export interface ELFRelocationSection extends ELFSection {
     /** The relocations parsed from this section. */
     relocations: ELFRelocation[];
+}
+
+/** RPL-exclusive CRC hashes section. */
+export interface RPLCrcSection extends ELFSection {
+    /** The CRC hashes of this RPL */
+    crcs: number[]; //? UInt16
+}
+
+/** RPL-exclusive file information section. */
+export interface RPLFileInfoSection extends ELFSection {
+    /** The parsed RPL file information. */
+    fileinfo: RPLFileInfo
+}
+
+/** RPL-exclusive file information section data structure. */
+export interface RPLFileInfo {
+    /** Magic number of the RPL_FILEINFO section, always "CAFE" */
+    magic: 'CAFE',               //* UInt16
+    version: number,             //* UInt16
+    textSize: number,            //? UInt32
+    textAlign: number,           //? UInt32
+    dataSize: number,            //? UInt32
+    dataAlign: number,           //? UInt32
+    loadSize: number,            //? UInt32
+    loadAlign: number,           //? UInt32
+    tempSize: number,            //? UInt32
+    trampAdjust: number,         //? UInt32
+    sdaBase: number,             //? UInt32
+    sda2Base: number,            //? UInt32
+    stackSize: number,           //? UInt32
+    /** The offset from the start of the section to the start of the strings array */
+    stringsOffset: number,       //? UInt32
+    flags: number,               //? UInt32
+    heapSize: number,            //? UInt32
+    tagOffset: number,           //? UInt32
+    minVersion: number,          //? UInt32
+    compressionLevel: number,    //! SInt32
+    trampAddition: number,       //? UInt32
+    fileInfoPad: number,         //? UInt32
+    cafeSdkVersion: number,      //? UInt32
+    cafeSdkRevision: number,     //? UInt32
+    tlsModuleIndex: number,      //* UInt16
+    tlsAlignShift: number,       //* UInt16
+    runtimeFileInfoSize: number, //? UInt32
+    /** Array of null-terminated strings until the end of the file */
+    strings: { [addr: number]: string; }
 }
 
 /** 

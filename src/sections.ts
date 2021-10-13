@@ -1,5 +1,5 @@
 import {
-    ELFSymbol, ELFSection, SectionHeaderEntryType, ELFSymbolSection, ELFStringSection, ELFRelocation, ELFRelocationSection
+    ELFSymbol, ELFSection, SectionHeaderEntryType, ELFSymbolSection, ELFStringSection, ELFRelocation, ELFRelocationSection, ObjectType
 } from "./types";
 import {
     symbolBindingToString, symbolTypeToString, symbolVisibilityToString,
@@ -8,6 +8,7 @@ import {
 import { Reader } from './reader';
 import { add, subtract, divide, toNumberSafe } from './biginthelpers';
 import { decode } from './encoding';
+import { RPL } from './rplsections';
 
 const MAX_SECTION_LOAD_SIZE = 0x1000000;
 
@@ -168,7 +169,7 @@ function fillInSymbolNames(symbols: ELFSymbol[], strings?: { [index: number]: st
 export async function readSectionHeaderEntries(fh: Reader,
     sh_off: number | bigint, sh_entsize: number, sh_num: number,
     bits: number, bigEndian: boolean, eSHStrNdx: number,
-    readSymbolData: boolean): Promise<ELFSection[]> {
+    readSymbolData: boolean, elfType: ObjectType): Promise<ELFSection[]> {
 
     if (sh_num == 0) {
         return [];
@@ -258,6 +259,21 @@ export async function readSectionHeaderEntries(fh: Reader,
         }
     }
 
+    // process RPL sections
+    if (elfType === ObjectType.RPL && bits === 32) {
+        for (const section of result) {
+            if (RPL.isCrcSection(section)) {
+                const { size, offset, entsize } = section;
+                section.crcs = await RPL.readCrcSection(fh, offset, size, entsize, bigEndian);
+            }
+
+            if (RPL.isFileInfoSection(section)) {
+                const { size, offset } = section;
+                section.fileinfo = await RPL.readFileInfoSection(fh, offset, size, bigEndian);
+            }
+        }
+    }
+
     fillInSectionHeaderNames(result, eSHStrNdx);
 
     return result;
@@ -293,10 +309,10 @@ export function isStringSection(section: ELFSection): section is ELFStringSectio
 
 export function isSymbolSection(section: ELFSection): section is ELFSymbolSection {
     return section?.type === SectionHeaderEntryType.DynSym ||
-        section?.type === SectionHeaderEntryType.SymTab;
+           section?.type === SectionHeaderEntryType.SymTab;
 }
 
 export function isRelocationSection(section: ELFSection): section is ELFRelocationSection {
     return section?.type === SectionHeaderEntryType.Rel ||
-        section?.type === SectionHeaderEntryType.Rela;
+           section?.type === SectionHeaderEntryType.Rela;
 }

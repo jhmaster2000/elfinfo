@@ -159,7 +159,7 @@ export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF
                         reader, eSHOff,
                         eSHEntSize, eSHNum,
                         bits, bigEndian, eSHStrNdx,
-                        options.readSymbolData);
+                        options.readSymbolData, type);
 
                     elf = {
                         path: reader.path,
