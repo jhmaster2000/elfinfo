@@ -2,16 +2,15 @@ import { isRelocationSection, isStringSection, isSymbolSection } from './section
 import { SectionHeaderEntryType, ELFOpenResult } from './types';
 import { ELF } from './types';
 
-function toHex(n: number | bigint | undefined, padamount: number = 0) {
+function toHex(n: number | bigint | undefined, padamount: number = 0, lowercase: boolean = false) {
     if (n !== undefined) {
         const hexchars = n.toString(16);
-        if (padamount == 0) {
-            padamount = typeof n == 'bigint' ? 8 :
-                hexchars.length <= 2 ? 2 :
-                    hexchars.length <= 4 ? 4 :
-                        8;
+        if (padamount === 0) {
+            padamount = (typeof n === 'bigint') ? 8 :
+                         (hexchars.length <= 2) ? 2 :
+                         (hexchars.length <= 4) ? 4 : 8;
         }
-        return `0x${hexchars.padStart(padamount, '0')}`;
+        return lowercase ? `0x${hexchars.padStart(padamount, '0')}` : '0x' + `${hexchars.padStart(padamount, '0')}`.toUpperCase();
     } else {
         return '<undefined>';
     }
