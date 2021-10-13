@@ -1,5 +1,5 @@
 import {
-    ELFSymbol, ELFSection, SectionHeaderEntryType, ELFSymbolSection, ELFStringSection, ELFRelocation, ELFRelocationSection, ObjectType
+    ELFSymbol, ELFSection, SectionHeaderEntryType, ELFSymbolSection, ELFStringSection, ELFRelocation, ELFRelocationSection, ObjectType, PackedELFSection
 } from "./types";
 import {
     symbolBindingToString, symbolTypeToString, symbolVisibilityToString,
@@ -9,6 +9,7 @@ import { Reader } from './reader';
 import { add, subtract, divide, toNumberSafe } from './biginthelpers';
 import { decode } from './encoding';
 import { RPL } from './rplsections';
+import { writeBufferToBuffer } from './writer';
 
 const MAX_SECTION_LOAD_SIZE = 0x1000000;
 
@@ -315,4 +316,17 @@ export function isSymbolSection(section: ELFSection): section is ELFSymbolSectio
 export function isRelocationSection(section: ELFSection): section is ELFRelocationSection {
     return section?.type === SectionHeaderEntryType.Rel ||
            section?.type === SectionHeaderEntryType.Rela;
+}
+
+export function packELFSection(section: ELFSection): PackedELFSection {
+        const databuf = Buffer.alloc(section.size);
+        let ix = 0;
+
+        // TODO
+
+        return {
+            headerIndex: section.index,
+            dataOffset: section.offset,
+            data: databuf
+        }
 }

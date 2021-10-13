@@ -84,4 +84,6 @@ export * from './reader';
 export * from './elf';
 export * from './types';
 export * from './debug';
+export * from './rplsections';
+export * from './sections';
 export { OpenOptions };

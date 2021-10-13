@@ -2,6 +2,7 @@ import * as elfinfo from './index';
 import { decode, encode } from './encoding';
 import { file, Reader } from './reader';
 import { ELFSection, SectionHeaderEntryType, RPLCrcSection, RPLFileInfoSection, RPLFileInfo, PackedELFSection } from './types';
+import { writeBufferToBuffer } from './writer';
 
 export namespace RPL {
     export async function readCrcSection(fh: Reader, offset: number, size: number, entsize: number, bigEndian: boolean): Promise<number[]> {
@@ -149,12 +150,4 @@ export namespace RPL {
             data: databuf
         };
     }
-}
-
-export function writeBufferToBuffer(buf: Buffer, data: Buffer, offset: number): Buffer {
-    //console.log('writebuf called:', data);
-    if ((offset + data.byteLength) > buf.byteLength) throw new Error('Cannot write outside destination buffer size.');
-    if (offset < 0) throw new Error('Offset must be greater than zero.');
-    for (let i = 0; i < data.byteLength; i++) buf.writeUInt8(data[i], offset + i);
-    return buf;
 }
