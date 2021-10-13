@@ -251,7 +251,7 @@ export async function readSectionHeaderEntries(fh: Reader,
                 }
             }
         }
-        
+
         if (isRelocationSection(section)) {
             const { size, offset, entsize } = section;
             section.relocations = await readRelocationSection(fh, offset, size, entsize, bigEndian, bits,

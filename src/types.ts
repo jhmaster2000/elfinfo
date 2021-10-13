@@ -414,7 +414,7 @@ export interface ELFOpenResult {
 }
 
 /**
- * A segment, parsed from the ELF file program header entries. 
+ * A segment, parsed from the ELF file program header entries.
  */
 export interface ELFSegment {
     /** The index of this segment, as parsed. */
@@ -441,8 +441,8 @@ export interface ELFSegment {
     align: number;
 }
 
-/** 
- * A section, parsed from the ELF file program header entries. 
+/**
+ * A section, parsed from the ELF file program header entries.
  */
 export interface ELFSection {
     /** The index of this section, as parsed. */
@@ -465,8 +465,8 @@ export interface ELFSection {
     offset: number;
     /** The size of this section. */
     size: number;
-    /** A section linked to this section. For example for a symbol section the 
-     * linked section is a string table section providing names for symbols. 
+    /** A section linked to this section. For example for a symbol section the
+     * linked section is a string table section providing names for symbols.
      */
     link: number;
     /** Section type specific info for this section. */
@@ -543,8 +543,8 @@ export interface RPLFileInfo {
     strings: { [addr: number]: string; }
 }
 
-/** 
- * A symbol, parsed from a symbol table. 
+/**
+ * A symbol, parsed from a symbol table.
  */
 export interface ELFSymbol {
     /** The index in the associated string table for the symbol. */

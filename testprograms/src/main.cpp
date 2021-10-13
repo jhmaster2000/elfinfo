@@ -29,11 +29,11 @@ extern "C" int main(int argc, const char *argv[])
     printf("%s: %s\n", "rodata string", rodatastring);
     datastring[sizeof(datastring) - 2] = '5';
     printf("%s: %s\n", "data string", datastring);
-    
+
     printf("%s: %s\n", "global rodata string", globalrodatastring);
     globaldatastring[13] = '5';
     printf("%s: %s\n", "global data string", globaldatastring);
-    
+
     globaldatastring2[13] = '5';
     printf("%s: %s\n", "global data string", globaldatastring2);
     return 0;

@@ -13,13 +13,13 @@ export namespace RPL {
             const crc = view.getUint32(0, !bigEndian);
             crcs[i] = crc;
         }
-    
+
         return crcs;
     }
 
     export async function readFileInfoSection(fh: Reader, offset: number, size: number, bigEndian: boolean): Promise<RPLFileInfo> {
         if (size < 0x60) throw new Error('RPL_FILEINFO section is too small, must be at least 0x60 in size.');
-        
+
         const view = await fh.view(0x60, offset);
         const readUint8  = view.getUint8.bind(view);
         const readUInt16 = (ix: number) => view.getUint16(ix, !bigEndian);
@@ -80,7 +80,7 @@ export namespace RPL {
             }
         }
         fileinfo.strings = strings;
-        
+
         return fileinfo;
     }
 
@@ -93,6 +93,6 @@ export namespace RPL {
     }
 
     export function packFileInfoSection() {
-        
+
     }
 }

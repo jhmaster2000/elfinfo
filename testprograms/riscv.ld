@@ -98,10 +98,10 @@ SECTIONS
     __bss_end__ = _ebss;
     __heap_start__ = .;
     __heap_end__ = ORIGIN(RAM) + LENGTH(RAM);
-    
+
     . = ALIGN(4);
   } >RAM
-  
+
   _sidata2 = LOADADDR(.data);
   .data2 :
   {

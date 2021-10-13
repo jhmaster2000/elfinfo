@@ -77,7 +77,7 @@ category("Open types", () => {
         const fh = await fs.promises.open(path, 'r');
         const buffer = await fh.readFile();
         await fh.close();
-        
+
         const elf = await elfinfo.open(Array.from(data));
         elf.warnings.forEach(w => console.warn(w));
         elf.errors.forEach(e => console.error(e));
@@ -85,7 +85,7 @@ category("Open types", () => {
         assert(elf.errors.length === 0);
         assert(elf.warnings.length === 0);
     });
-    
+
 
     test(`should open a Blob without problems`, async () => {
 

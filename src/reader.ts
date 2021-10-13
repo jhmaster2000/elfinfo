@@ -79,7 +79,7 @@ function createView(from: Uint8Array): DataView {
     return new DataView(from.buffer, from.byteOffset, from.byteLength);
 }
 
-/** 
+/**
  * An abstract interface for a file-reading interface. This is used
  * by the ELF parser to read the file from many different sources.
  */
