@@ -1,7 +1,7 @@
 import * as elfinfo from './index';
-import { decode } from './encoding';
+import { decode, encode } from './encoding';
 import { file, Reader } from './reader';
-import { ELFSection, SectionHeaderEntryType, RPLCrcSection, RPLFileInfoSection, RPLFileInfo } from './types';
+import { ELFSection, SectionHeaderEntryType, RPLCrcSection, RPLFileInfoSection, RPLFileInfo, PackedELFSection } from './types';
 
 export namespace RPL {
     export async function readCrcSection(fh: Reader, offset: number, size: number, entsize: number, bigEndian: boolean): Promise<number[]> {
@@ -92,7 +92,69 @@ export namespace RPL {
         return section.type === SectionHeaderEntryType.RPLFileInfo;
     }
 
-    export function packFileInfoSection() {
+    export function packCrcSection(section: RPLCrcSection): PackedELFSection {
+        const databuf = Buffer.alloc(section.size);
+        let ix = 0;
 
+        for (const crc of section.crcs) { writeBufferToBuffer(databuf, encode(crc, 4), ix); ix += 4; }
+
+        return {
+            headerIndex: section.index,
+            dataOffset: section.offset,
+            data: databuf
+        }
     }
+
+    export function packFileInfoSection(section: RPLFileInfoSection): PackedELFSection {
+        const databuf = Buffer.alloc(section.size);
+        let ix = 0;
+        writeBufferToBuffer(databuf, encode(parseInt(section.fileinfo.magic, 16), 2), ix); ix += 2;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.version, 2), ix); ix += 2;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.textSize, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.textAlign, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.dataSize, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.dataAlign, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.loadSize, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.loadAlign, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.tempSize, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.trampAdjust, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.sdaBase, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.sda2Base, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.stackSize, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.stringsOffset, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.flags, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.heapSize, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.tagOffset, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.minVersion, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.compressionLevel, 4, true), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.trampAddition, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.fileInfoPad, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.cafeSdkVersion, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.cafeSdkRevision, 4), ix); ix += 4;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.tlsModuleIndex, 2), ix); ix += 2;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.tlsAlignShift, 2), ix); ix += 2;
+        writeBufferToBuffer(databuf, encode(section.fileinfo.runtimeFileInfoSize, 4), ix); ix += 4;
+
+        for (let key in section.fileinfo.strings) {
+            const addr = Number(key);
+            const str = section.fileinfo.strings[key];
+            const encoded = encode(str);
+            writeBufferToBuffer(databuf, encoded, ix); ix += encoded.byteLength;
+            writeBufferToBuffer(databuf, encode('\0'), ix); ix += 1;
+        }
+
+        return {
+            headerIndex: section.index,
+            dataOffset: section.offset,
+            data: databuf
+        };
+    }
+}
+
+export function writeBufferToBuffer(buf: Buffer, data: Buffer, offset: number): Buffer {
+    //console.log('writebuf called:', data);
+    if ((offset + data.byteLength) > buf.byteLength) throw new Error('Cannot write outside destination buffer size.');
+    if (offset < 0) throw new Error('Offset must be greater than zero.');
+    for (let i = 0; i < data.byteLength; i++) buf.writeUInt8(data[i], offset + i);
+    return buf;
 }

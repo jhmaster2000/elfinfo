@@ -380,7 +380,7 @@ export interface ELF {
     entryPoint: number | bigint;
     /** Offset in the ELF file of the first program header entry. */
     programHeaderOffset: number;
-    /** Offset in the ELF file of the first section header entyr. */
+    /** Offset in the ELF file of the first section header entry. */
     sectionHeaderOffset: number;
     /** The size of one program header entry. */
     programHeaderEntrySize: number;
@@ -635,4 +635,11 @@ export interface ELFRelocation {
      */
     type: number;
 
+}
+
+/** Binary packed ELF section for writing back to file */
+export interface PackedELFSection {
+    headerIndex: number;
+    dataOffset: number;
+    data: Buffer;
 }
