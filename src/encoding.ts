@@ -46,3 +46,7 @@ if (_decode === undefined && typeof TextDecoder !== 'undefined') {
         return decoder.decode(array.subarray(offset, offset + length));
     }
 }
+
+export function encode(string: string, encoding: BufferEncoding = 'utf-8'): Buffer {
+    return Buffer.from(string, encoding);
+}
