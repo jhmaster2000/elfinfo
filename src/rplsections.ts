@@ -75,6 +75,7 @@ export namespace RPL {
             if (stringData[i] == 0) {
                 const slen = i - strIx;
                 if (slen > 0) strings[strIx + fileinfo.stringsOffset] = decode(stringData, strIx, slen);
+                if (slen === 0) strings[strIx + fileinfo.stringsOffset] = '';
                 strIx = i + 1;
             }
         }
@@ -89,5 +90,9 @@ export namespace RPL {
 
     export function isFileInfoSection(section: ELFSection): section is RPLFileInfoSection {
         return section.type === SectionHeaderEntryType.RPLFileInfo;
+    }
+
+    export function packFileInfoSection() {
+        
     }
 }
