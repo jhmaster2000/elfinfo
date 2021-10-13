@@ -30,4 +30,3 @@ make -f Makefile.gcc-aarch64_be &
 make -f Makefile.gcc-arm &
 
 wait
-
