@@ -67,8 +67,8 @@ import * as fs from 'fs/promises';
 import { open, debug } from 'elfinfo';
 
 // read the ELF file
-const elfdata = await fs.readFile('someelffile');
-const info = await open();
+const elfdata = await fs.readFile('./file.elf');
+const info = await open(elfdata);
 
 // generate human-readable output
 const fileinfo = debug(info);
