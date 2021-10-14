@@ -392,10 +392,27 @@ export interface ELF {
     numSectionHeaderEntries: number;
     /** The section index for the string table (if any). */
     shstrIndex: number;
+    /** The size of the ELF file in bytes. */
+    size: number;
     /** The segments for the ELF file, parsed from program header entries. */
     segments: ELFSegment[];
     /** The sections for the ELF file, parsed from section header entries. */
     sections: ELFSection[];
+}
+
+/**
+ * The result of packing an ELF file. The goods
+ * are in the data property.
+ */
+export interface ELFPackResult {
+    /** Whether or not the pack was a success. On failure, errors will be populated. */
+    success: boolean;
+    /** Any errors that happened during packing. If there are any errors, data will not be set. */
+    errors: string[];
+    /** Any warnings that occurred during packing. */
+    warnings: string[];
+    /** The binary data packed from the ELF file. */
+    data?: Buffer;
 }
 
 /**
@@ -477,6 +494,8 @@ export interface ELFSection {
      * table section this is the size of a symbol entry.
      */
     entsize: number;
+    /** The raw binary data of this section. May be an empty buffer for sections with no data. */
+    data: Buffer;
 }
 
 /** A string table section. */

@@ -172,10 +172,7 @@ export async function readSectionHeaderEntries(fh: Reader,
     bits: number, bigEndian: boolean, eSHStrNdx: number,
     readSymbolData: boolean, elfType: ObjectType): Promise<ELFSection[]> {
 
-    if (sh_num == 0) {
-        return [];
-    }
-
+    if (sh_num == 0) return [];
 
     const result: ELFSection[] = new Array(sh_num);
 
@@ -223,7 +220,8 @@ export async function readSectionHeaderEntries(fh: Reader,
             link,
             info,
             addralign,
-            entsize
+            entsize,
+            data: offset === 0 ? Buffer.alloc(0) : Buffer.from(view.buffer.slice(offset, offset + size))
         }
 
         result[i] = section;
@@ -319,14 +317,16 @@ export function isRelocationSection(section: ELFSection): section is ELFRelocati
 }
 
 export function packELFSection(section: ELFSection): PackedELFSection {
-        const databuf = Buffer.alloc(section.size);
-        let ix = 0;
+        //const databuf = Buffer.alloc(section.offset === 0 ? 0 : section.size);
+        //let ix = 0;
 
-        // TODO
+        //if (databuf.byteLength !== 0) {
+        //    writeBufferToBuffer(databuf, section.data, 0);
+        //}
 
         return {
             headerIndex: section.index,
             dataOffset: section.offset,
-            data: databuf
+            data: section.data
         }
 }

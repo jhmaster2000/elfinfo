@@ -1,8 +1,9 @@
-import { ELFOpenResult } from "./types";
+import { ELF, ELFOpenResult, ELFPackResult } from "./types";
 import * as reader from "./reader";
 
 import { readElf, OpenOptions } from "./parser";
 import * as fs from "fs/promises";
+import { packElf } from './writer';
 
 function isReader(item: any): item is reader.Reader {
     return typeof item === 'object' &&
@@ -24,6 +25,44 @@ function isBlob(item: any): item is reader.Blob {
     return typeof item === 'object' &&
         typeof item.size === 'number' &&
         typeof item.arrayBuffer === 'function';
+}
+
+function isELF(item: any): item is ELF {
+    return typeof item === 'object' &&
+    typeof item.class === 'number' &&
+    typeof item.classDescription === 'string' &&
+    typeof item.data === 'number' &&
+    typeof item.dataDescription === 'string' &&
+    typeof item.version === 'number' &&
+    typeof item.bits === 'number' &&
+    typeof item.abi === 'number' &&
+    typeof item.abiDescription === 'string' &&
+    typeof item.abiVersion === 'number' &&
+    typeof item.type === 'number' &&
+    typeof item.typeDescription === 'string' &&
+    typeof item.isa === 'number' &&
+    typeof item.isaDescription === 'string' &&
+    typeof item.isaVersion === 'number' &&
+    typeof item.flags === 'number' &&
+    typeof item.flagsDescription === 'string' &&
+    (typeof item.entryPoint === 'number' || typeof item.entryPoint === 'bigint') &&
+    typeof item.programHeaderOffset === 'number' &&
+    typeof item.sectionHeaderOffset === 'number' &&
+    typeof item.programHeaderEntrySize === 'number' &&
+    typeof item.numProgramHeaderEntries === 'number' &&
+    typeof item.sectionHeaderEntrySize === 'number' &&
+    typeof item.numSectionHeaderEntries === 'number' &&
+    typeof item.shstrIndex === 'number' &&
+    typeof item.size === 'number' &&
+    Array.isArray(item.segments) &&
+    Array.isArray(item.sections);
+}
+
+function isELFOpenResult(item: any): item is ELFOpenResult {
+    return typeof item === 'object' &&
+        typeof item.success === 'boolean' &&
+        Array.isArray(item.errors) &&
+        Array.isArray(item.warnings);
 }
 
 const defaultOptions: OpenOptions = {
@@ -70,15 +109,50 @@ export function open(input: Uint8Array | ArrayBuffer | Array<number> | reader.Re
                 errors: ['unsupported input type'],
                 warnings: []
             });
-        })
+        });
     }
 
-    if (callback) {
-        promise.then(callback);
-    }
-
+    if (callback) promise.then(callback);
     return promise;
 }
+
+/**
+ * Pack an ELF file back to binary.
+ * @param {any} elf the elfinfo ELF object to pack.
+ * @param {function} [callback] When specified, this will be called after the file is done packing.
+ * @returns {Promise<ELFOpenResult>} a result indicating the success or failure of parsing and the binary buffer for the ELF file.
+ */
+ export function pack(input: ELFOpenResult | ELF, callback?: (result: ELFPackResult) => void | null): Promise<ELFPackResult> {
+    let promise: Promise<ELFPackResult>;
+    let elf: ELF | undefined;
+
+    if (isELF(input)) elf = input;
+    else if (isELFOpenResult(input)) elf = input.elf;
+
+    if (elf) {
+        let data: Buffer = packElf(elf);
+
+        promise = new Promise((resolve) => {
+            resolve({
+                success: true,
+                errors: [],
+                warnings: [],
+                data: data
+            });
+        });
+    } else {
+        promise = new Promise((resolve) => {
+            resolve({
+                success: false,
+                errors: ['unsupported input type or invalid ELF'],
+                warnings: []
+            });
+        });
+    }
+
+    if (callback) promise.then(callback);
+    return promise;
+} 
 
 export * from './reader';
 export * from './elf';

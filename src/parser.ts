@@ -126,7 +126,7 @@ export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF
                 const eSHStrNdx = readUInt16(ix); ix += 2;
 
                 if (bits === 32 && eHSize !== 0x34 ||
-                    bits == 64 && eHSize !== 0x40) {
+                    bits === 64 && eHSize !== 0x40) {
                     errors.push("Invalid ELF file. Unexpected header size");
                 }
 
@@ -187,6 +187,7 @@ export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF
                         sectionHeaderEntrySize: eSHEntSize,
                         numSectionHeaderEntries: eSHNum,
                         shstrIndex: eSHStrNdx,
+                        size: size,
                         segments,
                         sections,
                     }
