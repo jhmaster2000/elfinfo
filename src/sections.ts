@@ -113,9 +113,7 @@ async function readSymbolsSection(fh: Reader, offset: number, size: number,
 async function readRelocationSection(fh: Reader, offset: number, size: number,
     entsize: number, bigEndian: boolean, bits: number, rela: boolean): Promise<ELFRelocation[]> {
 
-    const fhsize = await fh.size();
     const num = toNumberSafe(divide(size, entsize));
-    let ix = 0;
     const relocations = new Array<ELFRelocation>(num);
 
     for (let i = 0; i < num; i++) {
@@ -126,25 +124,25 @@ async function readRelocationSection(fh: Reader, offset: number, size: number,
         const readSInt64 = (ix: number) => view.getBigInt64(ix, !bigEndian);
 
         let ix = 0;
-
-        let addr, info, symbolIndex, type;
+        let addr: number | bigint, info: number | bigint, symbolIndex: number, type: number;
         let addend: number | bigint | undefined;
+
         if (bits === 32) {
             addr = readUInt32(ix); ix += 4;
             info = readUInt32(ix); ix += 4;
-            if (rela) {
-                addend = readSInt32(ix); ix += 4;
-            }
-            symbolIndex = info >> 8;
-            type = info & 0xFF;
+
+            if (rela) addend = readSInt32(ix); ix += 4;
+
+            symbolIndex = info >> 8; //? ######00
+            type = info & 0xFF;      //? 000000##
         } else {
             addr = readUInt64(ix); ix += 8;
             info = readUInt64(ix); ix += 8;
-            if (rela) {
-                addend = readSInt64(ix); ix += 8;
-            }
-            symbolIndex = toNumberSafe(info >> BigInt(32));
-            type = toNumberSafe(info & BigInt(0xFFFFFFFF));
+
+            if (rela) addend = readSInt64(ix); ix += 8;
+
+            symbolIndex = toNumberSafe(info >> BigInt(32)); //? ########00000000
+            type = toNumberSafe(info & BigInt(0xFFFFFFFF)); //? 00000000########
         }
 
         relocations[i] = {
@@ -314,6 +312,13 @@ export function isRelocationSection(section: ELFSection): section is ELFRelocati
            section?.type === SectionHeaderEntryType.Rela;
 }
 
+export function parseSymInfo(symInfo: number): { symidx: number; type: number; } {
+    return { symidx: symInfo >> 8, type: symInfo & 0xFF };
+}
+
+export function packSymInfo(symIdx: number, type: number): number {
+    return Number('0x' + symIdx.toString(16).padStart(6, '0') + type.toString(16).padStart(2, '0'));
+}
 
 export function packStringSection(section: ELFStringSection): Buffer {
     const strbuf: Buffer = Buffer.alloc(section.size);
@@ -354,6 +359,14 @@ export function packSymbolSection(section: ELFSymbolSection): Buffer {
 
 export function packRelocationSection(section: ELFRelocationSection): Buffer {
     const relbuf: Buffer = Buffer.alloc(section.size);
-    writeBufferToBuffer(relbuf, section.data, 0);
+    let ix = 0;
+
+    for (let rel of section.relocations) {
+        writeBufferToBuffer(relbuf, encode(Number(rel.addr), 4), ix); ix += 4;
+        writeBufferToBuffer(relbuf, encode(Number(rel.info), 4), ix); ix += 4;
+        if (rel.addend !== undefined) {
+            writeBufferToBuffer(relbuf, encode(Number(rel.addend), 4), ix); ix += 4;
+        }
+    }
     return relbuf;
 }

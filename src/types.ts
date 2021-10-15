@@ -645,13 +645,13 @@ export interface ELFRelocation {
      * is found in.
      * The symbol index is taken from the info field.
      */
-    symbolIndex: number;
+    readonly symbolIndex: number;
 
     /** The type of this relocation.
      * @summary Relocation types are processor specific
      * so the raw number is given here.
      * The relocation type is take from the info field
      */
-    type: number;
+    readonly type: number;
 
 }
