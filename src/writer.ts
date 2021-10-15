@@ -48,7 +48,7 @@ export function packElf(elf: ELF): ELFPackResult {
         writeBufferToBuffer(result.data, section.data, section.offset);
     }
     
-    const align = (result.data.byteLength + (result.data.byteLength % 4) * 3) - result.data.byteLength;
+    const align = (result.data.byteLength + 3 & -4) - result.data.byteLength;
     if (align !== 0) Buffer.concat([result.data, Buffer.alloc(align)]);
 
     return result;
