@@ -93,7 +93,7 @@ export function debug(elf_: ELF | ELFOpenResult): string {
                 result += `${(section.link || '').toString().padStart(4)}  `;
                 result += `${(section.info || '').toString().padStart(4)}  `;
                 result += `${toHex(section.addralign, 8)} `;
-                result += `${section.flagsDescription}\n`;
+                result += `${section.flagsDescription} (${section.flags})\n`;
             }
         }
 

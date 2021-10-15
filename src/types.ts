@@ -655,10 +655,3 @@ export interface ELFRelocation {
     type: number;
 
 }
-
-/** Binary packed ELF section for writing back to file */
-export interface PackedELFSection {
-    headerIndex: number;
-    dataOffset: number;
-    data: Buffer;
-}

@@ -1,5 +1,5 @@
 import {
-    ELFSymbol, ELFSection, SectionHeaderEntryType, ELFSymbolSection, ELFStringSection, ELFRelocation, ELFRelocationSection, ObjectType, PackedELFSection
+    ELFSymbol, ELFSection, SectionHeaderEntryType, ELFSymbolSection, ELFStringSection, ELFRelocation, ELFRelocationSection, ObjectType
 } from "./types";
 import {
     symbolBindingToString, symbolTypeToString, symbolVisibilityToString,
@@ -9,7 +9,6 @@ import { Reader } from './reader';
 import { add, subtract, divide, toNumberSafe } from './biginthelpers';
 import { decode } from './encoding';
 import { RPL } from './rplsections';
-import { writeBufferToBuffer } from './writer';
 
 const MAX_SECTION_LOAD_SIZE = 0x1000000;
 
@@ -289,9 +288,7 @@ function fillInSectionHeaderNames(sections: ELFSection[], eSHStrNdx: number) {
                         v.name = v.type ? "SECTION" + v.index : "<null>";
                     } else {
                         const name = getString(strs, v.nameix);
-                        if (name) {
-                            v.name = name;
-                        }
+                        if (name) v.name = name;
                     }
                 });
             }

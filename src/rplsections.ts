@@ -1,7 +1,7 @@
 import * as elfinfo from './index';
 import { decode, encode } from './encoding';
 import { file, Reader } from './reader';
-import { ELFSection, SectionHeaderEntryType, RPLCrcSection, RPLFileInfoSection, RPLFileInfo, PackedELFSection } from './types';
+import { ELFSection, SectionHeaderEntryType, RPLCrcSection, RPLFileInfoSection, RPLFileInfo } from './types';
 import { writeBufferToBuffer } from './writer';
 
 export namespace RPL {
@@ -93,20 +93,16 @@ export namespace RPL {
         return section.type === SectionHeaderEntryType.RPLFileInfo;
     }
 
-    export function packCrcSection(section: RPLCrcSection): PackedELFSection {
+    export function packCrcSection(section: RPLCrcSection): Buffer {
         const databuf = Buffer.alloc(section.size);
         let ix = 0;
 
         for (const crc of section.crcs) { writeBufferToBuffer(databuf, encode(crc, 4), ix); ix += 4; }
 
-        return {
-            headerIndex: section.index,
-            dataOffset: section.offset,
-            data: databuf
-        }
+        return databuf;
     }
 
-    export function packFileInfoSection(section: RPLFileInfoSection): PackedELFSection {
+    export function packFileInfoSection(section: RPLFileInfoSection): Buffer {
         const databuf = Buffer.alloc(section.size);
         let ix = 0;
         writeBufferToBuffer(databuf, encode(parseInt(section.fileinfo.magic, 16), 2), ix); ix += 2;
@@ -137,17 +133,13 @@ export namespace RPL {
         writeBufferToBuffer(databuf, encode(section.fileinfo.runtimeFileInfoSize, 4), ix); ix += 4;
 
         for (let key in section.fileinfo.strings) {
-            const addr = Number(key);
+            //const addr = Number(key);
             const str = section.fileinfo.strings[key];
             const encoded = encode(str);
             writeBufferToBuffer(databuf, encoded, ix); ix += encoded.byteLength;
             writeBufferToBuffer(databuf, encode('\0'), ix); ix += 1;
         }
 
-        return {
-            headerIndex: section.index,
-            dataOffset: section.offset,
-            data: databuf
-        };
+        return databuf;
     }
 }
