@@ -1,5 +1,5 @@
 import { encode } from './encoding';
-import { ELF } from './types';
+import { ELF, ELFPackResult } from './types';
 
 /** Write a buffer of data to a larger buffer from an offset */
 export function writeBufferToBuffer(buf: Buffer, data: Buffer, offset: number): Buffer {
@@ -10,13 +10,28 @@ export function writeBufferToBuffer(buf: Buffer, data: Buffer, offset: number): 
     return buf;
 }
 
-// TODO: Unhardcode this from 32 bits ELFs
-export function packElf(elf: ELF): Buffer {
+// TODO: Unhardcode this from ELF32 Big Endian + Segments support
+export function packElf(elf: ELF): ELFPackResult {
+    const result: ELFPackResult = {
+        success: false,
+        errors: [],
+        warnings: []
+    }
+    
+    if (elf.class !== 1 || elf.data !== 2) {
+        result.errors.push('Only ELF32 Big Endian packing is currently supported.');
+        return result;
+    }
+
+    if (elf.numProgramHeaderEntries !== 0 || elf.segments.length !== 0 || elf.programHeaderOffset !== 0)
+        result.warnings.push('Segment and program headers packing is not currently supported. Remaining ELF data will still attempt to be packed.');
+
     const elfbuf: Buffer = Buffer.alloc(elf.size);
 
     writeBufferToBuffer(elfbuf, packELFHeader(elf), 0);
 
-    return elfbuf;
+    result.data = elfbuf;
+    return result;
 }
 
 function packELFHeader(elf: ELF): Buffer {

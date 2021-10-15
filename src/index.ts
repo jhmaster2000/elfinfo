@@ -130,14 +130,14 @@ export function open(input: Uint8Array | ArrayBuffer | Array<number> | reader.Re
     else if (isELFOpenResult(input)) elf = input.elf;
 
     if (elf) {
-        let data: Buffer = packElf(elf);
+        let packed = packElf(elf);
 
         promise = new Promise((resolve) => {
             resolve({
                 success: true,
-                errors: [],
-                warnings: [],
-                data: data
+                errors: packed.errors,
+                warnings: packed.warnings,
+                data: packed.data
             });
         });
     } else {

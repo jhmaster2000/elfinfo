@@ -164,9 +164,9 @@ export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF
                     elf = {
                         path: reader.path,
                         class: eiClass,
-                        classDescription: eiClass == 1 ? 'ELF32' : 'ELF64',
+                        classDescription: eiClass === 1 ? 'ELF32' : 'ELF64',
                         data: eiData,
-                        dataDescription: eiData == 1 ? 'Little endian' : 'Big endian',
+                        dataDescription: eiData === 1 ? 'Little endian' : 'Big endian',
                         version: eiVer,
                         bits: bits,
                         abi: abi,
