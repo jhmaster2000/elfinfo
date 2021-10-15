@@ -1,5 +1,6 @@
 import { encode } from './encoding';
 import { RPL } from './rplsections';
+import { isRelocationSection, isStringSection, isSymbolSection, packRelocationSection, packStringSection, packSymbolSection } from './sections';
 import { ELF, ELFPackResult, ELFSection, SectionHeaderEntryType } from './types';
 
 /** Write a buffer of data to a larger buffer from an offset */
@@ -38,6 +39,15 @@ export function packElf(elf: ELF): ELFPackResult {
         const padding = section.offset - result.data.byteLength;
         result.data = Buffer.concat([result.data, Buffer.alloc(padding + section.size)]);
 
+        if (isStringSection(section)) {
+            writeBufferToBuffer(result.data, packStringSection(section), section.offset); continue;
+        }
+        if (isSymbolSection(section)) {
+            writeBufferToBuffer(result.data, packSymbolSection(section), section.offset); continue;
+        }
+        if (isRelocationSection(section)) {
+            writeBufferToBuffer(result.data, packRelocationSection(section), section.offset); continue;
+        }
         if (RPL.isCrcSection(section)) {
             writeBufferToBuffer(result.data, RPL.packCrcSection(section), section.offset); continue;
         }

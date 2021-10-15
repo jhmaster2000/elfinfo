@@ -7,8 +7,9 @@ import {
 } from "./strings";
 import { Reader } from './reader';
 import { add, subtract, divide, toNumberSafe } from './biginthelpers';
-import { decode } from './encoding';
+import { decode, encode } from './encoding';
 import { RPL } from './rplsections';
+import { writeBufferToBuffer } from './writer';
 
 const MAX_SECTION_LOAD_SIZE = 0x1000000;
 
@@ -313,3 +314,36 @@ export function isRelocationSection(section: ELFSection): section is ELFRelocati
            section?.type === SectionHeaderEntryType.Rela;
 }
 
+
+export function packStringSection(section: ELFStringSection): Buffer {
+    const strbuf: Buffer = Buffer.alloc(section.size);
+    let ix = 1;
+
+    for (let key in section.strings) {
+        const addr = Number(key);
+        const str = section.strings[key];
+        const encoded = encode(str);
+
+        if (strbuf[ix] !== 0) throw new Error(
+            `Failed to pack ELF because of corrupt string section of index ${section.index}:\n` +
+            `\tString "${str}" at .strtab offset 0x${addr.toString(16).toUpperCase()} is overlapped by the previous string which is too long.`
+        );
+
+        writeBufferToBuffer(strbuf, encoded, ix); ix += encoded.byteLength;
+        writeBufferToBuffer(strbuf, encode('\0'), ix); ix += 1;
+    }
+
+    return strbuf;
+}
+
+export function packSymbolSection(section: ELFSymbolSection): Buffer {
+    const symbuf: Buffer = Buffer.alloc(section.size);
+    writeBufferToBuffer(symbuf, section.data, 0);
+    return symbuf;
+}
+
+export function packRelocationSection(section: ELFRelocationSection): Buffer {
+    const relbuf: Buffer = Buffer.alloc(section.size);
+    writeBufferToBuffer(relbuf, section.data, 0);
+    return relbuf;
+}
