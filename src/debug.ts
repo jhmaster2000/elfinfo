@@ -55,7 +55,7 @@ export function debug(elf_: ELF | ELFOpenResult): string {
         if (elf.segments.length) {
 
             result += '\n\nProgram Header Entries:\n\n';
-            if (elf.bits == 32) {
+            if (elf.bits === 32) {
                 result += '    #   Type                 Offset     VirtAddr   PhysAddr   FileSize   MemSiz     Align      Flags\n';
             } else {
                 result += '    #   Type                 Offset             VirtAddr           PhysAddr           FileSize           MemSiz             Align      Flags\n';
@@ -76,7 +76,7 @@ export function debug(elf_: ELF | ELFOpenResult): string {
         if (elf.sections.length) {
 
             result += '\n\n\Sections:\n\n';
-            if (elf.bits == 32) {
+            if (elf.bits === 32) {
                 result += '    #   Name               Type                             Address    Offset     Size       EntSize    Link  Info  Align      Flags\n';
             } else {
                 result += '    #   Name               Type                             Address            Offset             Size               EntSize            Link  Info  Align      Flags\n';
@@ -101,7 +101,7 @@ export function debug(elf_: ELF | ELFOpenResult): string {
             result += `\n\n${section.typeDescription} section #${section.index} ${section.name}:\n\n`;
 
             if (isSymbolSection(section)) {
-                if (elf.bits == 32) {
+                if (elf.bits === 32) {
                     result += '      #   Value      Size       Type                         Bind   Visibility Name\n';
                 } else {
                     result += '      #   Value              Info       Type                         Bind   Visibility Name\n';
@@ -125,7 +125,7 @@ export function debug(elf_: ELF | ELFOpenResult): string {
             }
             else if (isRelocationSection(section)) {
                 `  Offset          Info           Type           Sym. Value    Sym. Name + Addend`
-                if (elf.bits == 32) {
+                if (elf.bits === 32) {
                     result += '        # Offset     Size       Type                         Bind   Visibility Name\n';
                 } else {
                     result += '        # Offset             Size               Type                         Bind   Visibility Name\n';

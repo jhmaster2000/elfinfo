@@ -35,7 +35,7 @@ category("Symbols", () => {
         symbols.forEach(x => {
             if (x.type === SymbolType.Object || x.type === SymbolType.Function) {
                 if (elf.elf && x.shndx < elf.elf.sections.length &&
-                    elf.elf.sections[x.shndx].type != SectionHeaderEntryType.NoBits) {
+                    elf.elf.sections[x.shndx].type !== SectionHeaderEntryType.NoBits) {
                     symbolSizeTotal += Number(x.size);
                 }
             }

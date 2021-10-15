@@ -25,7 +25,7 @@ async function updateSymbolAddressesAndLoadSymbols(elf: ELF, reader: Reader, loa
                         if (symbol.shndx < elf.sections.length) {
                             // offset is from start of section
                             symbol.virtualAddress = add(symbol.value, elf.sections[symbol.shndx].addr);
-                        } else if (symbol.shndx == 0xFFF1) {
+                        } else if (symbol.shndx === 0xFFF1) {
                             // SHN_ABS
                             symbol.virtualAddress = symbol.value;
                         }
@@ -88,16 +88,16 @@ export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF
                 errors.push("Not a valid ELF file. Endianness is invalid");
             }
 
-            if (eiVer != 1) {
+            if (eiVer !== 1) {
                 warnings.push("Not a valid ELF file. Version is invalid");
             }
 
-            if (errors.length == 0) {
+            if (errors.length === 0) {
 
                 const bits = eiClass === 1 ? 32 : 64;
                 const bigEndian = eiData !== 1;
                 const abi = eiAbi as ABI;
-                const sizeLeft = bits == 32 ? 0x24 : 0x30;
+                const sizeLeft = bits === 32 ? 0x24 : 0x30;
                 const headerview = await reader.view(sizeLeft);
                 const readUInt16 = (ix: number) => headerview.getUint16(ix, !bigEndian);
                 const readUInt32 = (ix: number) => headerview.getUint32(ix, !bigEndian);
@@ -130,24 +130,24 @@ export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF
                     errors.push("Invalid ELF file. Unexpected header size");
                 }
 
-                if ((ePHNum != 0 && (ePHOff < eHSize || ePHOff > size)) ||
-                    (eSHNum != 0 && (eSHOff < eHSize || eSHOff > size))) {
+                if ((ePHNum !== 0 && (ePHOff < eHSize || ePHOff > size)) ||
+                    (eSHNum !== 0 && (eSHOff < eHSize || eSHOff > size))) {
                     errors.push("Invalid ELF file. Invalid offsets");
                 }
 
-                if (ePHNum != 0 && ((bits == 32 && ePHEntSize < 0x20) ||
-                    (bits == 64 && ePHEntSize < 0x38) ||
+                if (ePHNum !== 0 && ((bits === 32 && ePHEntSize < 0x20) ||
+                    (bits === 64 && ePHEntSize < 0x38) ||
                     (ePHEntSize > 0xFF))) {
                     errors.push("Invalid ELF file. Program header entry size invalid");
                 }
 
-                if (eSHNum != 0 && ((bits == 32 && eSHEntSize < 0x28) ||
-                    (bits == 64 && eSHEntSize < 0x40) ||
+                if (eSHNum !== 0 && ((bits === 32 && eSHEntSize < 0x28) ||
+                    (bits === 64 && eSHEntSize < 0x40) ||
                     (ePHEntSize > 0xFF))) {
                     errors.push("Invalid ELF file. Section header entry size invalid");
                 }
 
-                if (errors.length == 0) {
+                if (errors.length === 0) {
                     const type = eType as ObjectType;
                     const isa = eMachine as ISA;
 

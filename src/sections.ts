@@ -43,7 +43,7 @@ async function readStringSection(fh: Reader, offset: number | bigint, size: numb
         [index: number]: string;
     } = {};
     for (let i = 0; i < size; i++) {
-        if (tmp[i] == 0) {
+        if (tmp[i] === 0) {
             const slen = i - ix;
             if (slen > 0) {
                 strings[ix] = decode(tmp, ix, slen);
@@ -71,7 +71,7 @@ async function readSymbolsSection(fh: Reader, offset: number, size: number,
         let ix = 0;
 
         let name, info, other, shndx, value, size;
-        if (bits == 32) {
+        if (bits === 32) {
             name = readUInt32(ix); ix += 4;
             value = readUInt32(ix); ix += 4;
             size = readUInt32(ix); ix += 4;
@@ -129,7 +129,7 @@ async function readRelocationSection(fh: Reader, offset: number, size: number,
 
         let addr, info, symbolIndex, type;
         let addend: number | bigint | undefined;
-        if (bits == 32) {
+        if (bits === 32) {
             addr = readUInt32(ix); ix += 4;
             info = readUInt32(ix); ix += 4;
             if (rela) {
@@ -172,7 +172,7 @@ export async function readSectionHeaderEntries(fh: Reader,
     bits: number, bigEndian: boolean, eSHStrNdx: number,
     readSymbolData: boolean, elfType: ObjectType): Promise<ELFSection[]> {
 
-    if (sh_num == 0) return [];
+    if (sh_num === 0) return [];
 
     const result: ELFSection[] = new Array(sh_num);
 
@@ -186,7 +186,7 @@ export async function readSectionHeaderEntries(fh: Reader,
 
         let ix = 8;
         let flags, addr, offset, size, link, info, addralign, entsize;
-        if (bits == 32) {
+        if (bits === 32) {
             flags = readUInt32(ix); ix += 4;
             addr = readUInt32(ix); ix += 4;
             offset = readUInt32(ix); ix += 4;
@@ -285,7 +285,7 @@ function fillInSectionHeaderNames(sections: ELFSection[], eSHStrNdx: number) {
             const strs = stringsSection.strings;
             if (strs) {
                 sections.forEach(v => {
-                    if (v.nameix == 0) {
+                    if (v.nameix === 0) {
                         v.name = v.type ? "SECTION" + v.index : "<null>";
                     } else {
                         const name = getString(strs, v.nameix);

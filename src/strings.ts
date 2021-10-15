@@ -267,7 +267,7 @@ export function sectionFlagsToString(flags: number | bigint) {
     if (flags & 0x400)     str.push('Thread Local Storage');
     if (flags & 0x4000000) str.push('Special ordering');
     if (flags & 0x8000000) str.push('Exclude');
-    if (str.length == 0) return '<none>';
+    if (str.length === 0) return '<none>';
     return str.join(' | ');
 }
 

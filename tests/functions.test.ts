@@ -33,10 +33,10 @@ category("Functions", () => {
         const allsyms = getSymbols(elf);
         assert(allsyms);
         assert(allsyms.length > 0);
-        assert(allsyms.filter(x => x.name == 'main.cpp').length === 1);
-        assert(allsyms.filter(x => x.name == '__init_array_end').length === 1);
-        assert(allsyms.filter(x => x.name == '_Z10factorialff').length === 1);
-        assert(allsyms.filter(x => x.name == 'printf').length === 1);
+        assert(allsyms.filter(x => x.name === 'main.cpp').length === 1);
+        assert(allsyms.filter(x => x.name === '__init_array_end').length === 1);
+        assert(allsyms.filter(x => x.name === '_Z10factorialff').length === 1);
+        assert(allsyms.filter(x => x.name === 'printf').length === 1);
     });
 
     test(`getSymbolsInSection (section) works`, async () => {
@@ -45,7 +45,7 @@ category("Functions", () => {
         const syms = getSymbolsInSection(elf, section);
         assert(syms);
         assert(syms.length > 0);
-        assert(syms.filter(x => x.name == '_Z10factorialff').length !==0);
+        assert(syms.filter(x => x.name === '_Z10factorialff').length !== 0);
     });
 
     test(`getSymbolsInSection (index) works`, async () => {
@@ -54,7 +54,7 @@ category("Functions", () => {
         const syms = getSymbolsInSection(elf, section.index);
         assert(syms);
         assert(syms.length > 0);
-        assert(syms.filter(x => x.name == 'main').length !==0);
+        assert(syms.filter(x => x.name === 'main').length !== 0);
     });
 
     test(`getSymbolsInSegment (segment) works`, async () => {
@@ -63,7 +63,7 @@ category("Functions", () => {
         const syms = getSymbolsInSegment(elf, elf.segments[3]);
         assert(syms);
         assert(syms.length > 0);
-        assert(syms.filter(x => x.name == 'main').length !==0);
+        assert(syms.filter(x => x.name === 'main').length !== 0);
     });
 
     test(`getSymbolsInSegment (index) works`, async () => {
@@ -71,7 +71,7 @@ category("Functions", () => {
         const syms = getSymbolsInSegment(elf, 3);
         assert(syms);
         assert(syms.length > 0);
-        assert(syms.filter(x => x.name == '_Z10factorialff').length !==0);
+        assert(syms.filter(x => x.name === '_Z10factorialff').length !== 0);
     });
 
     test(`getSectionsInSegment works`, async () => {
@@ -79,11 +79,11 @@ category("Functions", () => {
         const sections1 = getSectionsInSegment(elf, 3);
         assert(sections1);
         assert(sections1.length > 0);
-        assert(sections1.filter(x => x.name == '.text').length !==0);
+        assert(sections1.filter(x => x.name === '.text').length !== 0);
         const sections2 = getSectionsInSegment(elf, 5);
         assert(sections2);
         assert(sections2.length > 0);
-        assert(sections2.filter(x => x.name == '.bss').length !==0);
+        assert(sections2.filter(x => x.name === '.bss').length !== 0);
     });
 
     test(`getSectionForSymbol works`, async () => {

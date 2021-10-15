@@ -73,7 +73,7 @@ export namespace RPL {
 
         let strIx = 0;
         for (let i = 0; i < size - fileinfo.stringsOffset; i++) {
-            if (stringData[i] == 0) {
+            if (stringData[i] === 0) {
                 const slen = i - strIx;
                 if (slen > 0) strings[strIx + fileinfo.stringsOffset] = decode(stringData, strIx, slen);
                 if (slen === 0) strings[strIx + fileinfo.stringsOffset] = '';

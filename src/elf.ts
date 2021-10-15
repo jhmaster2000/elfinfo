@@ -44,7 +44,7 @@ export function getSymbols(elf: ELF): ELFSymbol[] {
  * @returns {ELFSymbol[]} an array of symbols that are addressed in the section.
  */
 export function getSymbolsInSection(elf: ELF, sectionOrIndex: ELFSection | number): ELFSymbol[] {
-    const section = typeof sectionOrIndex == 'number' ? elf.sections[sectionOrIndex] : sectionOrIndex;
+    const section = typeof sectionOrIndex === 'number' ? elf.sections[sectionOrIndex] : sectionOrIndex;
     return filterSymbolsByVirtualAddress(elf, section.addr, section.size);
 }
 
@@ -53,7 +53,7 @@ export function getSymbolsInSection(elf: ELF, sectionOrIndex: ELFSection | numbe
  * @returns {ELFSymbol[]} an array of symbols that are addressed in the segment.
 */
 export function getSymbolsInSegment(elf: ELF, segmentOrIndex: ELFSegment | number): ELFSymbol[] {
-    const segment = typeof segmentOrIndex == 'number' ? elf.segments[segmentOrIndex] : segmentOrIndex;
+    const segment = typeof segmentOrIndex === 'number' ? elf.segments[segmentOrIndex] : segmentOrIndex;
     return filterSymbolsByVirtualAddress(elf, segment.vaddr, segment.memsz);
 }
 
@@ -62,7 +62,7 @@ export function getSymbolsInSegment(elf: ELF, segmentOrIndex: ELFSegment | numbe
  * @returns {ELFSection[]} an array of sections that are addressed in the segment.
 */
 export function getSectionsInSegment(elf: ELF, segmentOrIndex: ELFSegment | number): ELFSection[] {
-    const segment = typeof segmentOrIndex == 'number' ? elf.segments[segmentOrIndex] : segmentOrIndex;
+    const segment = typeof segmentOrIndex === 'number' ? elf.segments[segmentOrIndex] : segmentOrIndex;
 
     return elf.sections.filter(x => x.addr > segment.vaddr && x.addr < add(segment.vaddr, segment.memsz));
 }
@@ -126,7 +126,7 @@ export function getSymbolsAtVirtualMemoryLocation(elf: ELF, location: number | b
     for (const section of elf.sections) {
         if (isSymbolSection(section)) {
             for (const symbol of section.symbols) {
-                if (symbol.size == 0) {
+                if (symbol.size === 0) {
                     if (symbol.virtualAddress === location) {
                         symbols.push(symbol);
                     }
@@ -320,7 +320,7 @@ export function getSectionByName(elf: ELF, sectionName: string): ELFSection {
  * @returns {ELFSection[]} an array of sections that match the name.
 */
 export function getSectionsByName(elf: ELF, sectionName: string): ELFSection[] {
-    return elf.sections.filter(s => s.name.toUpperCase() == sectionName.toUpperCase());
+    return elf.sections.filter(s => s.name.toUpperCase() === sectionName.toUpperCase());
 }
 
 /** Get the first symbol that matches the name (case-insensitive).
@@ -331,7 +331,7 @@ export function getSymbolByName(elf: ELF, symbolName: string): ELFSymbol | undef
     for (const section of elf.sections) {
         if (isSymbolSection(section)) {
             for (const symbol of section.symbols) {
-                if (symbol.name && symbol.name.toUpperCase() == symbolName.toUpperCase()) {
+                if (symbol.name && symbol.name.toUpperCase() === symbolName.toUpperCase()) {
                     return symbol
                 }
             }
@@ -351,7 +351,7 @@ export function getSymbolsByName(elf: ELF, symbolName: string): ELFSymbol[] {
     for (const section of elf.sections) {
         if (isSymbolSection(section)) {
             for (const symbol of section.symbols) {
-                if (symbol.name && symbol.name.toUpperCase() == symbolName.toUpperCase()) {
+                if (symbol.name && symbol.name.toUpperCase() === symbolName.toUpperCase()) {
                     matches.push(symbol);
                 }
             }

@@ -8,7 +8,7 @@ export async function readProgramHeaderEntries(fh: Reader,
     ph_off: number | bigint, ph_entsize: number, ph_num: number,
     bits: number, bigEndian: boolean): Promise<ELFSegment[]> {
 
-    if (ph_num == 0) {
+    if (ph_num === 0) {
         return [];
     }
 
@@ -22,7 +22,7 @@ export async function readProgramHeaderEntries(fh: Reader,
 
         let ix = 4;
         let flags, offset, vaddr, paddr, filesz, memsz, align;
-        if (bits == 32) {
+        if (bits === 32) {
             offset = readUInt32(ix); ix += 4;
             vaddr = readUInt32(ix); ix += 4;
             paddr = readUInt32(ix); ix += 4;

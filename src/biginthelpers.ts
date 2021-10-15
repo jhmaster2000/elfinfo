@@ -1,8 +1,8 @@
 
 export function subtract(a: number | bigint, b: number | bigint): number | bigint {
-    if (typeof a == 'bigint' && typeof b == 'bigint') {
+    if (typeof a === 'bigint' && typeof b === 'bigint') {
         return a - b;
-    } else if (typeof a == 'number' && typeof b == 'number') {
+    } else if (typeof a === 'number' && typeof b === 'number') {
         return a - b;
     } else {
         return BigInt(a) - BigInt(b);
@@ -10,9 +10,9 @@ export function subtract(a: number | bigint, b: number | bigint): number | bigin
 }
 
 export function add(a: number | bigint, b: number | bigint): number | bigint {
-    if (typeof a == 'bigint' && typeof b == 'bigint') {
+    if (typeof a === 'bigint' && typeof b === 'bigint') {
         return a + b;
-    } else if (typeof a == 'number' && typeof b == 'number') {
+    } else if (typeof a === 'number' && typeof b === 'number') {
         return a + b;
     } else {
         return BigInt(a) + BigInt(b);
@@ -20,9 +20,9 @@ export function add(a: number | bigint, b: number | bigint): number | bigint {
 }
 
 export function divide(a: number | bigint, b: number | bigint): number | bigint {
-    if (typeof a == 'bigint' && typeof b == 'bigint') {
+    if (typeof a === 'bigint' && typeof b === 'bigint') {
         return a / b;
-    } else if (typeof a == 'number' && typeof b == 'number') {
+    } else if (typeof a === 'number' && typeof b === 'number') {
         return parseInt(<any>(a / b));
     } else {
         return BigInt(a) / BigInt(b);
