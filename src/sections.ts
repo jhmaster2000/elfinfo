@@ -338,7 +338,17 @@ export function packStringSection(section: ELFStringSection): Buffer {
 
 export function packSymbolSection(section: ELFSymbolSection): Buffer {
     const symbuf: Buffer = Buffer.alloc(section.size);
-    writeBufferToBuffer(symbuf, section.data, 0);
+    let ix = 0;
+
+    for (let symbol of section.symbols) {
+        writeBufferToBuffer(symbuf, encode(symbol.nameix, 4), ix); ix += 4;
+        writeBufferToBuffer(symbuf, encode(Number(symbol.value), 4), ix); ix += 4;
+        writeBufferToBuffer(symbuf, encode(symbol.size, 4), ix); ix += 4;
+        writeBufferToBuffer(symbuf, encode(symbol.info, 1), ix); ix += 1;
+        writeBufferToBuffer(symbuf, encode(symbol.other, 1), ix); ix += 1;
+        writeBufferToBuffer(symbuf, encode(symbol.shndx, 2), ix); ix += 2;
+    }
+
     return symbuf;
 }
 
