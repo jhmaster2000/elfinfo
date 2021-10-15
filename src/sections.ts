@@ -316,17 +316,3 @@ export function isRelocationSection(section: ELFSection): section is ELFRelocati
            section?.type === SectionHeaderEntryType.Rela;
 }
 
-export function packELFSection(section: ELFSection): PackedELFSection {
-        //const databuf = Buffer.alloc(section.offset === 0 ? 0 : section.size);
-        //let ix = 0;
-
-        //if (databuf.byteLength !== 0) {
-        //    writeBufferToBuffer(databuf, section.data, 0);
-        //}
-
-        return {
-            headerIndex: section.index,
-            dataOffset: section.offset,
-            data: section.data
-        }
-}

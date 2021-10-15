@@ -1,5 +1,5 @@
 import { encode } from './encoding';
-import { ELF, ELFPackResult } from './types';
+import { ELF, ELFPackResult, ELFSection, PackedELFSection } from './types';
 
 /** Write a buffer of data to a larger buffer from an offset */
 export function writeBufferToBuffer(buf: Buffer, data: Buffer, offset: number): Buffer {
@@ -60,4 +60,18 @@ function packELFHeader(elf: ELF): Buffer {
     writeBufferToBuffer(headerbuf, encode(elf.shstrIndex, 2), ix); ix += 2;
 
     return headerbuf;
+}
+
+export function packELFSection(section: ELFSection): PackedELFSection {
+    //const databuf = Buffer.alloc(section.offset === 0 ? 0 : section.size);
+    //let ix = 0;
+    //if (databuf.byteLength !== 0) {
+    //    writeBufferToBuffer(databuf, section.data, 0);
+    //}
+
+    return {
+        headerIndex: section.index,
+        dataOffset: section.offset,
+        data: section.data
+    }
 }
