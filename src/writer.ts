@@ -20,7 +20,7 @@ export function packElf(elf: ELF): ELFPackResult {
         warnings: []
     }
     
-    if (elf.class !== 1 || elf.data !== 2) {
+    if (elf.class !== 1 || elf.endian !== 2) {
         result.errors.push('Only ELF32 Big Endian packing is currently supported.');
         return result;
     }
@@ -71,7 +71,7 @@ function packELFHeader(elf: ELF): Buffer {
 
     headerbuf.write('\x7FELF', ix, 'utf-8'); ix += 4;
     writeBufferToBuffer(headerbuf, encode(elf.class, 1), ix); ix += 1;
-    writeBufferToBuffer(headerbuf, encode(elf.data, 1), ix); ix += 1;
+    writeBufferToBuffer(headerbuf, encode(elf.endian, 1), ix); ix += 1;
     writeBufferToBuffer(headerbuf, encode(elf.version, 1), ix); ix += 1;
     writeBufferToBuffer(headerbuf, encode(elf.abi, 1), ix); ix += 1;
     writeBufferToBuffer(headerbuf, encode(elf.abiVersion, 1), ix); ix += 1;

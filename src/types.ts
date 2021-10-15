@@ -348,9 +348,9 @@ export interface ELF {
     /** A human readable description of class.  */
     classDescription: string;
     /** The endianness of the data in the ELF file. */
-    data: number;
+    endian: number;
     /** A human readable description of data. */
-    dataDescription: string;
+    endianDescription: string;
     /** The version of the ELF file. There is currently only one version. */
     version: number;
     /** Numberical number of bits with respect to class. Either 32 or 64. */

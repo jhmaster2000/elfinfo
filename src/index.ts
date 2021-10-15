@@ -31,8 +31,8 @@ function isELF(item: any): item is ELF {
     return typeof item === 'object' &&
     typeof item.class === 'number' &&
     typeof item.classDescription === 'string' &&
-    typeof item.data === 'number' &&
-    typeof item.dataDescription === 'string' &&
+    typeof item.endian === 'number' &&
+    typeof item.endianDescription === 'string' &&
     typeof item.version === 'number' &&
     typeof item.bits === 'number' &&
     typeof item.abi === 'number' &&

@@ -37,7 +37,7 @@ export function debug(elf_: ELF | ELFOpenResult): string {
         result += `Path: ${elf.path}\n`;
         result += `Class:                             ${elf.classDescription} (${elf.class})\n`;
         result += `Bits:                              ${elf.bits} bits\n`;
-        result += `Data:                              ${elf.dataDescription} (${elf.data})\n`;
+        result += `Data:                              ${elf.endianDescription} (${elf.endian})\n`;
         result += `Version:                           ${elf.version}\n`;
         result += `OS/ABI:                            ${elf.abiDescription} (${toHex(elf.abi)})\n`;
         result += `ABI version:                       ${elf.abiVersion}\n`;
