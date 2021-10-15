@@ -365,7 +365,7 @@ export function packRelocationSection(section: ELFRelocationSection): Buffer {
         writeBufferToBuffer(relbuf, encode(Number(rel.addr), 4), ix); ix += 4;
         writeBufferToBuffer(relbuf, encode(Number(rel.info), 4), ix); ix += 4;
         if (rel.addend !== undefined) {
-            writeBufferToBuffer(relbuf, encode(Number(rel.addend), 4), ix); ix += 4;
+            writeBufferToBuffer(relbuf, encode(Number(rel.addend), 4, true), ix); ix += 4;
         }
     }
     return relbuf;
