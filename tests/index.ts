@@ -48,7 +48,7 @@ function printFailure(name: string, message?: string, time?: number) {
     printErrorMessage(message);
 }
 
-export function category(name: string, stuff: () => void | Promise<void>) {
+export function category(name: string, stuff: () => void | Promise<void>): void {
 
     const prev = currentCategoryStorage.getStore();
 
@@ -62,7 +62,7 @@ export function category(name: string, stuff: () => void | Promise<void>) {
     }
 }
 
-export function test(name: string, fn: () => any) {
+export function test(name: string, fn: () => any): void {
     const category = currentCategoryStorage.getStore();
     if (category) {
         name = `${category.name} - ${name}`;
@@ -70,7 +70,7 @@ export function test(name: string, fn: () => any) {
     tests.push({ name, fn });
 }
 
-async function findTests() {
+async function findTests(): Promise<void> {
     const files = (await fs.readdir(__dirname))
         .filter(x => /^(?!index).+\.js$/.test(x));
     for (let test of files) {
@@ -85,7 +85,7 @@ async function findTests() {
             })));
 }
 
-async function run() {
+async function run(): Promise<void> {
 
     const filter = argv[2] ? new RegExp(argv[2]) : undefined;
     const timeUntilRun = performance.now() - startTime;
@@ -143,7 +143,7 @@ async function run() {
     }
 }
 
-(async () => {
+(async (): Promise<void> => {
     await findTests();
     await run();
 })();

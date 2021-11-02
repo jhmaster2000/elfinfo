@@ -1,21 +1,13 @@
-import {
-    ELFSymbol, ELFSection, SectionHeaderEntryType, ELFSymbolSection, ELFStringSection, ELFRelocation, ELFRelocationSection, ObjectType
-} from "./types";
-import {
-    symbolBindingToString, symbolTypeToString, symbolVisibilityToString,
-    sectionFlagsToString, sectionHeaderEntryTypeToString
-} from "./strings";
+import * as ELF from './types';
 import { Reader } from './reader';
-import { add, subtract, divide, toNumberSafe } from './biginthelpers';
+import { divide, toNumberSafe } from './biginthelpers';
 import { decode, encode } from './encoding';
 import { RPL } from './rplsections';
 import { writeBufferToBuffer } from './writer';
 
-const MAX_SECTION_LOAD_SIZE = 0x1000000;
+//const MAX_SECTION_LOAD_SIZE = 0x1000000;
 
-
-function getString(strings: { [index: number]: string; }, index: number) {
-
+export function getString(strings: { [index: number]: string; }, index: number): string {
     let str = strings[index];
     if (!str) {
         // both GCC and clang have a tendency to
@@ -26,13 +18,11 @@ function getString(strings: { [index: number]: string; }, index: number) {
             if (kv < index) {
                 const ss = strings[kv];
                 if (kv + ss.length > index) {
-                    str = ss.substr(index - kv);
-                    break;
+                    str = ss.substr(index - kv); break;
                 }
             }
         }
     }
-
     return str;
 }
 
@@ -55,12 +45,12 @@ async function readStringSection(fh: Reader, offset: number | bigint, size: numb
 }
 
 async function readSymbolsSection(fh: Reader, offset: number, size: number,
-    entsize: number, bigEndian: boolean, bits: number): Promise<ELFSymbol[]> {
+    entsize: number, bigEndian: boolean, bits: number, sectionIndex: number): Promise<ELF.Symbol[]> {
 
-    const fhsize = await fh.size();
+    const fhsize = fh.size();
     const num = divide(size, entsize);
     let ix = 0;
-    const symbols: ELFSymbol[] = [];
+    const symbols: ELF.Symbol[] = [];
     for (let i = 0; i < num; i++) {
         const view = await fh.view(entsize, offset + i * entsize);
         const readUint8 = view.getUint8.bind(view);
@@ -86,35 +76,28 @@ async function readSymbolsSection(fh: Reader, offset: number, size: number,
             value = readUInt64(ix); ix += 8;
             size = Number(readUInt64(ix)); ix += 8;
         }
-        const type = info & 0xF;
-        const binding = info >> 4;
-        const visibility = other & 3;
+        //const type = info & 0xF;
+        //const binding = info >> 4;
+        //const visibility = other & 3;
 
-        symbols[i] = {
-            nameix: name,
-            name: "",
-            info,
-            other,
-            shndx,
-            value,
-            size,
-            type,
-            binding,
-            visibility,
-            typeDescription: symbolTypeToString(type),
-            bindingDescription: symbolBindingToString(binding),
-            visibilityDescription: symbolVisibilityToString(visibility)
-        };
+        let symbol = new ELF.Symbol(sectionIndex);
+        symbol.nameOffset = name;
+        symbol.info = info;
+        symbol.other = other;
+        symbol.shndx = shndx;
+        symbol.value = value;
+        symbol.size = size;
+        symbols[i] = symbol;
     }
 
     return symbols;
 }
 
 async function readRelocationSection(fh: Reader, offset: number, size: number,
-    entsize: number, bigEndian: boolean, bits: number, rela: boolean): Promise<ELFRelocation[]> {
+    entsize: number, bigEndian: boolean, bits: number, rela: boolean): Promise<ELF.Relocation[]> {
 
     const num = toNumberSafe(divide(size, entsize));
-    const relocations = new Array<ELFRelocation>(num);
+    const relocations = new Array<ELF.Relocation>(num);
 
     for (let i = 0; i < num; i++) {
         const view = await fh.view(entsize, offset + i * entsize);
@@ -133,46 +116,46 @@ async function readRelocationSection(fh: Reader, offset: number, size: number,
 
             if (rela) addend = readSInt32(ix); ix += 4;
 
-            symbolIndex = info >> 8; //? ######00
-            type = info & 0xFF;      //? 000000##
+            symbolIndex = info >> 8; //? 0x######00
+            type = info & 0xFF;      //? 0x000000##
         } else {
             addr = readUInt64(ix); ix += 8;
             info = readUInt64(ix); ix += 8;
 
             if (rela) addend = readSInt64(ix); ix += 8;
 
-            symbolIndex = toNumberSafe(info >> BigInt(32)); //? ########00000000
-            type = toNumberSafe(info & BigInt(0xFFFFFFFF)); //? 00000000########
+            symbolIndex = toNumberSafe(info >> BigInt(32)); //? 0x########00000000
+            type = toNumberSafe(info & BigInt(0xFFFFFFFF)); //? 0x00000000########
         }
 
-        relocations[i] = {
-            addr,
-            info,
-            addend,
-            symbolIndex,
-            type
-        };
+        let relocation = new ELF.Relocation();
+        relocation.addr = addr;
+        relocation.info = info;
+        relocation.addend = addend;
+        relocation.symbolIndex = symbolIndex;
+        relocation.type = type;
+        relocations[i] = relocation;
     }
 
     return relocations;
 }
 
-function fillInSymbolNames(symbols: ELFSymbol[], strings?: { [index: number]: string; }) {
+/*function fillInSymbolNames(symbols: ELF.Symbol[], strings?: { [index: number]: string; }) {
     if (!strings) return;
 
     for (let i = 0; i < symbols.length; i++) {
-        symbols[i].name = getString(strings, symbols[i].nameix) || "";
+        symbols[i].name = getString(strings, symbols[i].nameOffset) || '';
     }
-}
+}*/
 
 export async function readSectionHeaderEntries(fh: Reader,
     sh_off: number | bigint, sh_entsize: number, sh_num: number,
     bits: number, bigEndian: boolean, eSHStrNdx: number,
-    readSymbolData: boolean, elfType: ObjectType): Promise<ELFSection[]> {
+    readSymbolData: boolean, elfType: ELF.Type): Promise<ELF.Section[]> {
 
     if (sh_num === 0) return [];
 
-    const result: ELFSection[] = new Array(sh_num);
+    const result: ELF.Section[] = new Array(sh_num);
 
     for (let i = 0; i < sh_num; i++) {
         const view = await fh.view(sh_entsize, Number(sh_off) + i * Number(sh_entsize));
@@ -204,23 +187,19 @@ export async function readSectionHeaderEntries(fh: Reader,
             entsize = toNumberSafe(readUInt64(ix)); ix += 8;
         }
 
-        const section: ELFSection = {
-            index: i,
-            name: "",
-            nameix: name,
-            type,
-            typeDescription: sectionHeaderEntryTypeToString(type),
-            flags,
-            flagsDescription: sectionFlagsToString(flags),
-            addr,
-            offset,
-            size,
-            link,
-            info,
-            addralign,
-            entsize,
-            data: offset === 0 ? Buffer.alloc(0) : Buffer.from(view.buffer.slice(offset, offset + size))
-        }
+        let section = new ELF.Section();
+        section.index = i;
+        section.nameOffset = name;
+        section.type = type;
+        section.flags = flags;
+        section.addr = addr;
+        section.offset = offset;
+        section.size = size;
+        section.link = link;
+        section.info = info;
+        section.addrAlign = addralign;
+        section.entSize = entsize;
+        section.data = offset === 0 ? Buffer.alloc(0) : Buffer.from(view.buffer.slice(offset, offset + size))
 
         result[i] = section;
     }
@@ -236,13 +215,13 @@ export async function readSectionHeaderEntries(fh: Reader,
     // process symbol sections and relocation sections
     for (const section of result) {
         if (isSymbolSection(section)) {
-            const { size, offset, entsize, link } = section;
-            section.symbols = await readSymbolsSection(fh, offset, size, entsize, bigEndian, bits);
+            const { index, size, offset, entSize, link } = section;
+            section.symbols = await readSymbolsSection(fh, offset, size, entSize, bigEndian, bits, index);
 
             if (link >= 0 && link < result.length) {
                 const stringsSection = result[link];
                 if (isStringSection(stringsSection)) {
-                    fillInSymbolNames(section.symbols, stringsSection.strings);
+                    //fillInSymbolNames(section.symbols, stringsSection.strings);
                 } else {
                     // TODO: error: linked section is not a string table
                 }
@@ -250,18 +229,17 @@ export async function readSectionHeaderEntries(fh: Reader,
         }
 
         if (isRelocationSection(section)) {
-            const { size, offset, entsize } = section;
-            section.relocations = await readRelocationSection(fh, offset, size, entsize, bigEndian, bits,
-                section.type === SectionHeaderEntryType.Rela);
+            const { size, offset, entSize } = section;
+            section.relocations = await readRelocationSection(fh, offset, size, entSize, bigEndian, bits, section.type === ELF.SectionType.Rela);
         }
     }
 
     // process RPL sections
-    if (elfType === ObjectType.RPL && bits === 32) {
+    if (elfType === ELF.Type.RPL && bits === 32) {
         for (const section of result) {
             if (RPL.isCrcSection(section)) {
-                const { size, offset, entsize } = section;
-                section.crcs = await RPL.readCrcSection(fh, offset, size, entsize, bigEndian);
+                const { size, offset, entSize } = section;
+                section.crcs = await RPL.readCrcSection(fh, offset, size, entSize, bigEndian);
             }
 
             if (RPL.isFileInfoSection(section)) {
@@ -271,22 +249,22 @@ export async function readSectionHeaderEntries(fh: Reader,
         }
     }
 
-    fillInSectionHeaderNames(result, eSHStrNdx);
+    //fillInSectionHeaderNames(result, eSHStrNdx);
 
     return result;
 }
 
-function fillInSectionHeaderNames(sections: ELFSection[], eSHStrNdx: number) {
+/*function fillInSectionHeaderNames(sections: ELF.Section[], eSHStrNdx: number) {
     if (eSHStrNdx < sections.length) {
         const stringsSection = sections[eSHStrNdx];
         if (isStringSection(stringsSection)) {
             const strs = stringsSection.strings;
             if (strs) {
                 sections.forEach(v => {
-                    if (v.nameix === 0) {
-                        v.name = v.type ? "SECTION" + v.index : "<null>";
+                    if (v.nameOffset === 0) {
+                        v.name = v.type ? 'SECTION' + v.index : '<null>';
                     } else {
-                        const name = getString(strs, v.nameix);
+                        const name = getString(strs, v.nameOffset);
                         if (name) v.name = name;
                     }
                 });
@@ -295,21 +273,20 @@ function fillInSectionHeaderNames(sections: ELFSection[], eSHStrNdx: number) {
             // TODO: error: eSHStrNdx is not a string table
         }
     }
+}*/
+
+export function isStringSection(section: ELF.Section): section is ELF.StringSection {
+    return section?.type === ELF.SectionType.StrTab;
 }
 
-
-export function isStringSection(section: ELFSection): section is ELFStringSection {
-    return section?.type === SectionHeaderEntryType.StrTab;
+export function isSymbolSection(section: ELF.Section): section is ELF.SymbolSection {
+    return section?.type === ELF.SectionType.DynSym ||
+           section?.type === ELF.SectionType.SymTab;
 }
 
-export function isSymbolSection(section: ELFSection): section is ELFSymbolSection {
-    return section?.type === SectionHeaderEntryType.DynSym ||
-           section?.type === SectionHeaderEntryType.SymTab;
-}
-
-export function isRelocationSection(section: ELFSection): section is ELFRelocationSection {
-    return section?.type === SectionHeaderEntryType.Rel ||
-           section?.type === SectionHeaderEntryType.Rela;
+export function isRelocationSection(section: ELF.Section): section is ELF.RelocationSection {
+    return section?.type === ELF.SectionType.Rel ||
+           section?.type === ELF.SectionType.Rela;
 }
 
 export function parseSymInfo(symInfo: number): { symidx: number; type: number; } {
@@ -320,7 +297,7 @@ export function packSymInfo(symIdx: number, type: number): number {
     return Number('0x' + symIdx.toString(16).padStart(6, '0') + type.toString(16).padStart(2, '0'));
 }
 
-export function packStringSection(section: ELFStringSection): Buffer {
+export function packStringSection(section: ELF.StringSection): Buffer {
     const strbuf: Buffer = Buffer.alloc(section.size);
     let ix = 1;
 
@@ -331,7 +308,7 @@ export function packStringSection(section: ELFStringSection): Buffer {
 
         if (strbuf[ix] !== 0) throw new Error(
             `Failed to pack ELF because of corrupt string section of index ${section.index}:\n` +
-            `\tString "${str}" at .strtab offset 0x${addr.toString(16).toUpperCase()} is overlapped by the previous string which is too long.`
+            `\tString '${str}' at .strtab offset 0x${addr.toString(16).toUpperCase()} is overlapped by the previous string which is too long.`
         );
 
         writeBufferToBuffer(strbuf, encoded, ix); ix += encoded.byteLength;
@@ -341,15 +318,15 @@ export function packStringSection(section: ELFStringSection): Buffer {
     return strbuf;
 }
 
-export function packSymbolSection(section: ELFSymbolSection): Buffer {
+export function packSymbolSection(section: ELF.SymbolSection): Buffer {
     const symbuf: Buffer = Buffer.alloc(section.size);
     let ix = 0;
 
     for (let symbol of section.symbols) {
-        writeBufferToBuffer(symbuf, encode(symbol.nameix, 4), ix); ix += 4;
+        writeBufferToBuffer(symbuf, encode(symbol.nameOffset, 4), ix); ix += 4;
         writeBufferToBuffer(symbuf, encode(Number(symbol.value), 4), ix); ix += 4;
         writeBufferToBuffer(symbuf, encode(symbol.size, 4), ix); ix += 4;
-        writeBufferToBuffer(symbuf, encode(symbol.info, 1), ix); ix += 1;
+        writeBufferToBuffer(symbuf, encode(<number>symbol.info, 1), ix); ix += 1;
         writeBufferToBuffer(symbuf, encode(symbol.other, 1), ix); ix += 1;
         writeBufferToBuffer(symbuf, encode(symbol.shndx, 2), ix); ix += 2;
     }
@@ -357,7 +334,7 @@ export function packSymbolSection(section: ELFSymbolSection): Buffer {
     return symbuf;
 }
 
-export function packRelocationSection(section: ELFRelocationSection): Buffer {
+export function packRelocationSection(section: ELF.RelocationSection): Buffer {
     const relbuf: Buffer = Buffer.alloc(section.size);
     let ix = 0;
 

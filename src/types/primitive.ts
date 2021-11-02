@@ -1,0 +1,10 @@
+export type nybble = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
+export type uint8  = number;
+export type uint16 = number;
+export type uint32 = number;
+export type uint64 = bigint;
+export type sint8  = number;
+export type sint16 = number;
+export type sint32 = number;
+export type sint64 = bigint;
+export type Union<T extends number | bigint> = `${T}`;

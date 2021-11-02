@@ -22,7 +22,9 @@
   },
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "tests",
+    "dev"
   ],
   "typeAcquisition": {
     "enable": false

@@ -60,7 +60,7 @@ function read(path: string): Uint8Array {
     return fs.readFileSync(path);
 }
 
-function getTestPrograms() {
+function getTestPrograms(): ProgramData {
     return Object.fromEntries(testProgramAbis.map(abi => ({
         abi,
         vals: {
@@ -75,7 +75,7 @@ function getTestPrograms() {
     }])) as ProgramData;
 }
 
-function getStockPrograms() {
+function getStockPrograms(): StockProgramData {
     return Object.fromEntries(stockProgramNames.map(name =>
         [name, Object.fromEntries(stockProgramAbis.map(abi => {
             const programPath = path.join(basepath, 'stock', `${name}_${abi}`);

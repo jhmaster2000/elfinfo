@@ -1,12 +1,9 @@
-import { abiToString, isaToString, objectTypeToString, elfFlagsToString } from "./strings";
-import { ELF, ABI, ISA, ObjectType, ELFOpenResult, SymbolType } from "./types";
-import { readProgramHeaderEntries } from "./segments";
-import { isSymbolSection, readSectionHeaderEntries } from "./sections";
-import { Reader } from "./reader";
-import { virtualAddressToFileOffset } from "./elf";
-import { add, toNumberSafe } from "./biginthelpers";
-import { read } from "fs";
-
+import * as ELF from './types';
+//import { readProgramHeaderEntries } from './segments';
+//import { virtualAddressToFileOffset } from './elf';
+import { isSymbolSection, readSectionHeaderEntries } from './sections';
+import { Reader } from './reader';
+import { add, toNumberSafe } from './biginthelpers';
 
 /** Options for reading an ELF file. */
 export interface OpenOptions {
@@ -14,14 +11,14 @@ export interface OpenOptions {
     readSymbolData: boolean
 };
 
-async function updateSymbolAddressesAndLoadSymbols(elf: ELF, reader: Reader, loadSymbols: boolean) {
+async function updateSymbolAddressesAndLoadSymbols(elf: ELF.File, reader: Reader, loadSymbols: boolean) {
     const readerSize = reader.size();
-    const elftype = elf.type;
-    if (elftype === ObjectType.Executable || elftype === ObjectType.Relocatable || elftype === ObjectType.Shared || elftype === ObjectType.RPL) {
+    const elftype = elf.header.type;
+    if (elftype === ELF.Type.Executable || elftype === ELF.Type.Relocatable || elftype === ELF.Type.Shared || elftype === ELF.Type.RPL) {
         for (const section of elf.sections) {
             if (isSymbolSection(section)) {
                 for (const symbol of section.symbols) {
-                    if (elftype === ObjectType.Relocatable) {
+                    if (elftype === ELF.Type.Relocatable) {
                         if (symbol.shndx < elf.sections.length) {
                             // offset is from start of section
                             symbol.virtualAddress = add(symbol.value, elf.sections[symbol.shndx].addr);
@@ -35,16 +32,15 @@ async function updateSymbolAddressesAndLoadSymbols(elf: ELF, reader: Reader, loa
                     }
 
                     if (loadSymbols && symbol.virtualAddress &&
-                        (symbol.type === SymbolType.Function || symbol.type === SymbolType.Object) &&
-                        symbol.size) {
-                        const fileOffset = virtualAddressToFileOffset(elf, symbol.value);
+                        (symbol.type === ELF.SymbolType.Function || symbol.type === ELF.SymbolType.Object) && symbol.size) {
+                        /*const fileOffset = virtualAddressToFileOffset(elf, symbol.value);
                         if (fileOffset) {
                             if (fileOffset + symbol.size <= readerSize) {
                                 symbol.data = await reader.read(symbol.size, fileOffset);
                             } else {
                                 debugger;
                             }
-                        }
+                        }*/
                     }
                 }
             }
@@ -52,168 +48,104 @@ async function updateSymbolAddressesAndLoadSymbols(elf: ELF, reader: Reader, loa
     }
 }
 
-export async function readElf(reader: Reader, options: OpenOptions): Promise<ELFOpenResult> {
+export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF.File> {
+    let elf: ELF.File = new ELF.File();
 
-    let success = false;
-    const errors = [];
-    const warnings = [];
-    let elf: ELF | undefined;
+    await reader.open();
 
-    try {
+    const size = reader.size();
+    if (size <= 0x40) throw new Error('Not a valid ELF file. Too small.');
 
-        await reader.open();
+    const view = await reader.view(16);
 
-        const size = await reader.size();
-        if (size <= 0x40) {
-            errors.push("Not a valid ELF file. Too small.");
-        } else {
-            const view = await reader.view(16);
+    const magic = 0x7F454C46;
+    if (view.getInt32(0, false) !== magic) throw new Error(`Not a valid ELF file. The file does not start with ${magic.toString(16).toUpperCase()}.`);
 
-            const magic = 0x464C457F;
-            if (view.getInt32(0, true) !== magic) {
-                warnings.push("Not a valid ELF file. The file does not start with 0x7F ELF.");
-            }
+    const eiClass = view.getUint8(4);
+    const eiData = view.getUint8(5);
+    const eiVer = view.getUint8(6);
+    const eiAbi = view.getUint8(7);
+    const eiAbiVer = view.getUint8(8);
 
-            const eiClass = view.getUint8(4);
-            const eiData = view.getUint8(5);
-            const eiVer = view.getUint8(6);
-            const eiAbi = view.getUint8(7);
-            const eiAbiVer = view.getUint8(8);
+    if (eiClass < 1 || eiClass > 2) throw new Error('Not a valid ELF file. Class is invalid');
+    if (eiData < 1 || eiData > 2) throw new Error('Not a valid ELF file. Endianness is invalid');
+    if (eiVer !== 1) throw new Error('Not a valid ELF file. Version is invalid');
 
-            if (eiClass < 1 || eiClass > 2) {
-                errors.push("Not a valid ELF file. Class is invalid");
-            }
+    const bits = eiClass === 1 ? 32 : 64;
+    const bigEndian = eiData !== 1;
+    const abi = eiAbi as ELF.ABI;
+    const sizeLeft = bits === 32 ? 0x24 : 0x30;
+    const headerview = await reader.view(sizeLeft);
+    const readUInt16 = (ix: number) => headerview.getUint16(ix, !bigEndian);
+    const readUInt32 = (ix: number) => headerview.getUint32(ix, !bigEndian);
+    const readUInt64 = (ix: number) => headerview.getBigUint64(ix, !bigEndian);
 
-            if (eiData < 1 || eiData > 2) {
-                errors.push("Not a valid ELF file. Endianness is invalid");
-            }
-
-            if (eiVer !== 1) {
-                warnings.push("Not a valid ELF file. Version is invalid");
-            }
-
-            if (errors.length === 0) {
-
-                const bits = eiClass === 1 ? 32 : 64;
-                const bigEndian = eiData !== 1;
-                const abi = eiAbi as ABI;
-                const sizeLeft = bits === 32 ? 0x24 : 0x30;
-                const headerview = await reader.view(sizeLeft);
-                const readUInt16 = (ix: number) => headerview.getUint16(ix, !bigEndian);
-                const readUInt32 = (ix: number) => headerview.getUint32(ix, !bigEndian);
-                const readUInt64 = (ix: number) => headerview.getBigUint64(ix, !bigEndian);
-
-                let ix = 0;
-                const eType = readUInt16(ix); ix += 2;
-                const eMachine = readUInt16(ix); ix += 2;
-                const eVersion = readUInt32(ix); ix += 4;
-                let eEntry, ePHOff, eSHOff;
-                if (bits === 32) {
-                    eEntry = readUInt32(ix); ix += 4;
-                    ePHOff = readUInt32(ix); ix += 4;
-                    eSHOff = readUInt32(ix); ix += 4;
-                } else {
-                    eEntry = readUInt64(ix); ix += 8;
-                    ePHOff = toNumberSafe(readUInt64(ix)); ix += 8;
-                    eSHOff = toNumberSafe(readUInt64(ix)); ix += 8;
-                }
-                const eFlags = readUInt32(ix); ix += 4;
-                const eHSize = readUInt16(ix); ix += 2;
-                const ePHEntSize = readUInt16(ix); ix += 2;
-                const ePHNum = readUInt16(ix); ix += 2;
-                const eSHEntSize = readUInt16(ix); ix += 2;
-                const eSHNum = readUInt16(ix); ix += 2;
-                const eSHStrNdx = readUInt16(ix); ix += 2;
-
-                if (bits === 32 && eHSize !== 0x34 ||
-                    bits === 64 && eHSize !== 0x40) {
-                    errors.push("Invalid ELF file. Unexpected header size");
-                }
-
-                if ((ePHNum !== 0 && (ePHOff < eHSize || ePHOff > size)) ||
-                    (eSHNum !== 0 && (eSHOff < eHSize || eSHOff > size))) {
-                    errors.push("Invalid ELF file. Invalid offsets");
-                }
-
-                if (ePHNum !== 0 && ((bits === 32 && ePHEntSize < 0x20) ||
-                    (bits === 64 && ePHEntSize < 0x38) ||
-                    (ePHEntSize > 0xFF))) {
-                    errors.push("Invalid ELF file. Program header entry size invalid");
-                }
-
-                if (eSHNum !== 0 && ((bits === 32 && eSHEntSize < 0x28) ||
-                    (bits === 64 && eSHEntSize < 0x40) ||
-                    (ePHEntSize > 0xFF))) {
-                    errors.push("Invalid ELF file. Section header entry size invalid");
-                }
-
-                if (errors.length === 0) {
-                    const type = eType as ObjectType;
-                    const isa = eMachine as ISA;
-
-                    const segments = await readProgramHeaderEntries(
-                        reader, ePHOff,
-                        ePHEntSize, ePHNum,
-                        bits, bigEndian);
-                    const sections = await readSectionHeaderEntries(
-                        reader, eSHOff,
-                        eSHEntSize, eSHNum,
-                        bits, bigEndian, eSHStrNdx,
-                        options.readSymbolData, type);
-
-                    elf = {
-                        path: reader.path,
-                        class: eiClass,
-                        classDescription: eiClass === 1 ? 'ELF32' : 'ELF64',
-                        endian: eiData,
-                        endianDescription: eiData === 1 ? 'Little endian' : 'Big endian',
-                        version: eiVer,
-                        bits: bits,
-                        abi: abi,
-                        abiVersion: eiAbiVer,
-                        abiDescription: abiToString(abi),
-                        isa: isa,
-                        isaDescription: isaToString(isa),
-                        isaVersion: eVersion,
-                        type: type,
-                        typeDescription: objectTypeToString(type),
-                        flags: eFlags,
-                        flagsDescription: elfFlagsToString(isa, eFlags),
-                        entryPoint: eEntry,
-                        programHeaderOffset: ePHOff,
-                        programHeaderEntrySize: ePHEntSize,
-                        numProgramHeaderEntries: ePHNum,
-                        sectionHeaderOffset: eSHOff,
-                        sectionHeaderEntrySize: eSHEntSize,
-                        numSectionHeaderEntries: eSHNum,
-                        shstrIndex: eSHStrNdx,
-                        size: size,
-                        segments,
-                        sections,
-                    }
-
-                    await updateSymbolAddressesAndLoadSymbols(elf, reader, options.readSymbolData);
-                    success = true;
-                }
-            }
-        }
-    } catch (e: any) {
-        errors.push(`Exception caught: ${e.toString()}`);
+    let ix = 0;
+    const eType = readUInt16(ix); ix += 2;
+    const eMachine = readUInt16(ix); ix += 2;
+    const eVersion = readUInt32(ix); ix += 4;
+    let eEntry, ePHOff, eSHOff;
+    if (bits === 32) {
+        eEntry = readUInt32(ix); ix += 4;
+        ePHOff = readUInt32(ix); ix += 4;
+        eSHOff = readUInt32(ix); ix += 4;
+    } else {
+        eEntry = readUInt64(ix); ix += 8;
+        ePHOff = toNumberSafe(readUInt64(ix)); ix += 8;
+        eSHOff = toNumberSafe(readUInt64(ix)); ix += 8;
     }
+    const eFlags = readUInt32(ix); ix += 4;
+    const eHSize = readUInt16(ix); ix += 2;
+    const ePHEntSize = readUInt16(ix); ix += 2;
+    const ePHNum = readUInt16(ix); ix += 2;
+    const eSHEntSize = readUInt16(ix); ix += 2;
+    const eSHNum = readUInt16(ix); ix += 2;
+    const eSHStrNdx = readUInt16(ix); ix += 2;
+
+    if (bits === 32 && eHSize !== 0x34 || bits === 64 && eHSize !== 0x40) throw new Error('Not a valid ELF file. Header size is invalid');
+
+    if ((ePHNum !== 0 && (ePHOff < eHSize || ePHOff > size)) || (eSHNum !== 0 && (eSHOff < eHSize || eSHOff > size))) {
+        throw new Error('Not a valid ELF file. Invalid offsets');
+    }
+    if (ePHNum !== 0 && ((bits === 32 && ePHEntSize < 0x20) || (bits === 64 && ePHEntSize < 0x38) || (ePHEntSize > 0xFF))) {
+        throw new Error('Not a valid ELF file. Program header entry size is invalid');
+    }
+    if (eSHNum !== 0 && ((bits === 32 && eSHEntSize < 0x28) || (bits === 64 && eSHEntSize < 0x40) || (ePHEntSize > 0xFF))) {
+        throw new Error('Not a valid ELF file. Section header entry size is invalid');
+    }
+
+    const type = eType as ELF.Type;
+    const isa = eMachine as ELF.ISA;
+
+    //const segments = await readProgramHeaderEntries(reader, ePHOff, ePHEntSize, ePHNum, bits, bigEndian);
+    const sections = await readSectionHeaderEntries(reader, eSHOff, eSHEntSize, eSHNum, bits, bigEndian, eSHStrNdx, options.readSymbolData, type);
+
+    elf.header.class = eiClass;
+    elf.header.endian = eiData;
+    elf.header.version = eiVer;
+    elf.header.abi = abi;
+    elf.header.abiVersion = eiAbiVer;
+    elf.header.isa = isa;
+    elf.header.isaVersion = eVersion;
+    elf.header.type = type;
+    elf.header.flags = eFlags;
+    elf.header.entryPoint = eEntry;
+    elf.header.programHeadersOffset = ePHOff;
+    elf.header.programHeadersEntrySize = ePHEntSize;
+    elf.header.programHeadersEntryCount = ePHNum;
+    elf.header.sectionHeadersOffset = eSHOff;
+    elf.header.sectionHeadersEntrySize = eSHEntSize;
+    elf.header.sectionHeadersEntryCount = eSHNum;
+    elf.header.shstrIndex = eSHStrNdx;
+    elf.sections = sections;
+
+    await updateSymbolAddressesAndLoadSymbols(elf, reader, options.readSymbolData);
 
     // close the file
     if (reader) {
-        try {
-            await reader.close();
-        } catch (e: any) {
-            errors.push(`Exception caught: ${e.toString()}`);
-        }
+        try { await reader.close(); }
+        catch(e: any) { throw new Error(`Failed to close ELF reader: ${e.toString()}`); }
     }
 
-    return {
-        success,
-        errors,
-        warnings,
-        elf
-    };
+    return elf;
 }

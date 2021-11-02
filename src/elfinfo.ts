@@ -2,7 +2,7 @@
 import { open } from './';
 import { debug } from './debug';
 
-(async function main() {
+(async function main(): Promise<void> {
     const programs = process.argv.slice(2);
 
     if (programs.length) {
@@ -12,6 +12,6 @@ import { debug } from './debug';
             console.log('\n\n');
         }
     } else {
-        console.log(`Usage: elfinfo [program]`)
+        console.log(`Usage: elfinfo [program]`);
     }
 })().catch(console.error);

@@ -1,258 +1,251 @@
-import {
-    ISA, ABI, ObjectType,
-    ProgramHeaderEntryType, SectionHeaderEntryType,
-    SymbolType, SymbolBinding, SymbolVisibility
-} from './types';
+import * as ELF from './types';
 
-export function isaToString(isa: ISA): string {
+export function isaToString(isa: ELF.ISA): string {
     switch (isa) {
-        case ISA.None:          return 'No machine';
-        case ISA.M32:           return 'AT&T WE 32100';
-        case ISA.SPARC:         return 'SUN SPARC';
-        case ISA.x86:           return 'Intel x86';
-        case ISA.ISA68K:        return 'Motorola m68k family';
-        case ISA.ISA88K:        return 'Motorola m88k family';
-        case ISA.IAMCU:         return 'Intel MCU';
-        case ISA.ISA860:        return 'Intel 80860';
-        case ISA.MIPS:          return 'MIPS R3000 big-endian';
-        case ISA.S370:          return 'IBM System/370';
-        case ISA.MIPS_RS3_LE:   return 'MIPS R3000 little-endian';
-        case ISA.PARISC:        return 'HPPA';
-        case ISA.VPP500:        return 'Fujitsu VPP500';
-        case ISA.SPARC32PLUS:   return 'Sun\'s "v8plus"';
-        case ISA.ISA960:        return 'Intel 80960';
-        case ISA.PPC:           return 'PowerPC';
-        case ISA.PPC64:         return 'PowerPC 64-bit';
-        case ISA.S390:          return 'IBM S390';
-        case ISA.SPU:           return 'IBM SPU/SPC';
-        case ISA.V800:          return 'NEC V800 series';
-        case ISA.FR20:          return 'Fujitsu FR20';
-        case ISA.RH32:          return 'TRW RH-32';
-        case ISA.RCE:           return 'Motorola RCE';
-        case ISA.ARM:           return 'ARM';
-        case ISA.FAKE_ALPHA:    return 'Digital Alpha';
-        case ISA.SH:            return 'Hitachi SH';
-        case ISA.SPARCV9:       return 'SPARC v9 64-bit';
-        case ISA.TRICORE:       return 'Siemens Tricore';
-        case ISA.ARC:           return 'Argonaut RISC Core';
-        case ISA.H8_300:        return 'Hitachi H8/300';
-        case ISA.H8_300H:       return 'Hitachi H8/300H';
-        case ISA.H8S:           return 'Hitachi H8S';
-        case ISA.H8_500:        return 'Hitachi H8/500';
-        case ISA.IA_64:         return 'Intel Merced';
-        case ISA.MIPS_X:        return 'Stanford MIPS-X';
-        case ISA.COLDFIRE:      return 'Motorola Coldfire';
-        case ISA.ISA68HC12:     return 'Motorola M68HC12';
-        case ISA.MMA:           return 'Fujitsu MMA Multimedia Accelerator';
-        case ISA.PCP:           return 'Siemens PCP';
-        case ISA.NCPU:          return 'Sony nCPU embeeded RISC';
-        case ISA.NDR1:          return 'Denso NDR1 microprocessor';
-        case ISA.STARCORE:      return 'Motorola Start*Core processor';
-        case ISA.ME16:          return 'Toyota ME16 processor';
-        case ISA.ST100:         return 'STMicroelectronic ST100 processor';
-        case ISA.TINYJ:         return 'Advanced Logic Corp. Tinyj emb.fam';
-        case ISA.X86_64:        return 'AMD x86-64 architecture';
-        case ISA.PDSP:          return 'Sony DSP Processor';
-        case ISA.PDP10:         return 'Digital PDP-10';
-        case ISA.PDP11:         return 'Digital PDP-11';
-        case ISA.FX66:          return 'Siemens FX66 microcontroller';
-        case ISA.ST9PLUS:       return 'STMicroelectronics ST9+ 8/16 mc';
-        case ISA.ST7:           return 'STmicroelectronics ST7 8 bit mc';
-        case ISA.ISA68HC16:     return 'Motorola MC68HC16 microcontroller';
-        case ISA.ISA68HC11:     return 'Motorola MC68HC11 microcontroller';
-        case ISA.ISA68HC08:     return 'Motorola MC68HC08 microcontroller';
-        case ISA.ISA68HC05:     return 'Motorola MC68HC05 microcontroller';
-        case ISA.SVX:           return 'Silicon Graphics SVx';
-        case ISA.ST19:          return 'STMicroelectronics ST19 8 bit mc';
-        case ISA.VAX:           return 'Digital VAX';
-        case ISA.CRIS:          return 'Axis Communications 32-bit emb.proc';
-        case ISA.JAVELIN:       return 'Infineon Technologies 32-bit emb.proc';
-        case ISA.FIREPATH:      return 'Element 14 64-bit DSP Processor';
-        case ISA.ZSP:           return 'LSI Logic 16-bit DSP Processor';
-        case ISA.MMIX:          return 'Donald Knuth\'s educational 64-bit proc';
-        case ISA.HUANY:         return 'Harvard University machine-independent object files';
-        case ISA.PRISM:         return 'SiTera Prism';
-        case ISA.AVR:           return 'Atmel AVR 8-bit microcontroller';
-        case ISA.FR30:          return 'Fujitsu FR30';
-        case ISA.D10V:          return 'Mitsubishi D10V';
-        case ISA.D30V:          return 'Mitsubishi D30V';
-        case ISA.V850:          return 'NEC v850';
-        case ISA.M32R:          return 'Mitsubishi M32R';
-        case ISA.MN10300:       return 'Matsushita MN10300';
-        case ISA.MN10200:       return 'Matsushita MN10200';
-        case ISA.PJ:            return 'picoJava';
-        case ISA.OPENRISC:      return 'OpenRISC 32-bit embedded processor';
-        case ISA.ARC_COMPACT:   return 'ARC International ARCompact';
-        case ISA.XTENSA:        return 'Tensilica Xtensa Architecture';
-        case ISA.VIDEOCORE:     return 'Alphamosaic VideoCore';
-        case ISA.TMM_GPP:       return 'Thompson Multimedia General Purpose Proc';
-        case ISA.NS32K:         return 'National Semi. 32000';
-        case ISA.TPC:           return 'Tenor Network TPC';
-        case ISA.SNP1K:         return 'Trebia SNP 1000';
-        case ISA.ST200:         return 'STMicroelectronics ST200';
-        case ISA.IP2K:          return 'Ubicom IP2xxx';
-        case ISA.MAX:           return 'MAX processor';
-        case ISA.CR:            return 'National Semi. CompactRISC';
-        case ISA.F2MC16:        return 'Fujitsu F2MC16';
-        case ISA.MSP430:        return 'Texas Instruments msp430';
-        case ISA.BLACKFIN:      return 'Analog Devices Blackfin DSP';
-        case ISA.SE_C33:        return 'Seiko Epson S1C33 family';
-        case ISA.SEP:           return 'Sharp embedded microprocessor';
-        case ISA.ARCA:          return 'Arca RISC';
-        case ISA.UNICORE:       return 'PKU-Unity & MPRC Peking Uni. mc series';
-        case ISA.EXCESS:        return 'eXcess configurable cpu';
-        case ISA.DXP:           return 'Icera Semi. Deep Execution Processor';
-        case ISA.ALTERA_NIOS2:  return 'Altera Nios II';
-        case ISA.CRX:           return 'National Semi. CompactRISC CRX';
-        case ISA.XGATE:         return 'Motorola XGATE';
-        case ISA.C166:          return 'Infineon C16x/XC16x';
-        case ISA.M16C:          return 'Renesas M16C';
-        case ISA.DSPIC30F:      return 'Microchip Technology dsPIC30F';
-        case ISA.CE:            return 'Freescale Communication Engine RISC';
-        case ISA.M32C:          return 'Renesas M32C';
-        case ISA.TSK3000:       return 'Altium TSK3000';
-        case ISA.RS08:          return 'Freescale RS08';
-        case ISA.SHARC:         return 'Analog Devices SHARC family';
-        case ISA.ECOG2:         return 'Cyan Technology eCOG2';
-        case ISA.SCORE7:        return 'Sunplus S+core7 RISC';
-        case ISA.DSP24:         return 'New Japan Radio (NJR) 24-bit DSP';
-        case ISA.VIDEOCORE3:    return 'Broadcom VideoCore III';
-        case ISA.LATTICEMICO32: return 'RISC for Lattice FPGA';
-        case ISA.SE_C17:        return 'Seiko Epson C17';
-        case ISA.TI_C6000:      return 'Texas Instruments TMS320C6000 DSP';
-        case ISA.TI_C2000:      return 'Texas Instruments TMS320C2000 DSP';
-        case ISA.TI_C5500:      return 'Texas Instruments TMS320C55x DSP';
-        case ISA.TI_ARP32:      return 'Texas Instruments App. Specific RISC';
-        case ISA.TI_PRU:        return 'Texas Instruments Prog. Realtime Unit';
-        case ISA.MMDSP_PLUS:    return 'STMicroelectronics 64bit VLIW DSP';
-        case ISA.CYPRESS_M8C:   return 'Cypress M8C';
-        case ISA.R32C:          return 'Renesas R32C';
-        case ISA.TRIMEDIA:      return 'NXP Semi. TriMedia';
-        case ISA.QDSP6:         return 'QUALCOMM DSP6';
-        case ISA.ISA8051:       return 'Intel 8051 and variants';
-        case ISA.STXP7X:        return 'STMicroelectronics STxP7x';
-        case ISA.NDS32:         return 'Andes Tech. compact code emb. RISC';
-        case ISA.ECOG1X:        return 'Cyan Technology eCOG1X';
-        case ISA.MAXQ30:        return 'Dallas Semi. MAXQ30 mc';
-        case ISA.XIMO16:        return 'New Japan Radio (NJR) 16-bit DSP';
-        case ISA.MANIK:         return 'M2000 Reconfigurable RISC';
-        case ISA.CRAYNV2:       return 'Cray NV2 vector architecture';
-        case ISA.RX:            return 'Renesas RX';
-        case ISA.METAG:         return 'Imagination Tech. META';
-        case ISA.MCST_ELBRUS:   return 'MCST Elbrus';
-        case ISA.ECOG16:        return 'Cyan Technology eCOG16';
-        case ISA.CR16:          return 'National Semi. CompactRISC CR16';
-        case ISA.ETPU:          return 'Freescale Extended Time Processing Unit';
-        case ISA.SLE9X:         return 'Infineon Tech. SLE9X';
-        case ISA.L10M:          return 'Intel L10M';
-        case ISA.K10M:          return 'Intel K10M';
-        case ISA.AARCH64:       return 'ARM AARCH64';
-        case ISA.AVR32:         return 'Amtel 32-bit microprocessor';
-        case ISA.STM8:          return 'STMicroelectronics STM8';
-        case ISA.TILE64:        return 'Tileta TILE64';
-        case ISA.TILEPRO:       return 'Tilera TILEPro';
-        case ISA.MICROBLAZE:    return 'Xilinx MicroBlaze';
-        case ISA.CUDA:          return 'NVIDIA CUDA';
-        case ISA.TILEGX:        return 'Tilera TILE-Gx';
-        case ISA.CLOUDSHIELD:   return 'CloudShield';
-        case ISA.COREA_1ST:     return 'KIPO-KAIST Core-A 1st gen.';
-        case ISA.COREA_2ND:     return 'KIPO-KAIST Core-A 2nd gen.';
-        case ISA.ARC_COMPACT2:  return 'Synopsys ARCompact V2';
-        case ISA.OPEN8:         return 'Open8 RISC';
-        case ISA.RL78:          return 'Renesas RL78';
-        case ISA.VIDEOCORE5:    return 'Broadcom VideoCore V';
-        case ISA.ISA78KOR:      return 'Renesas 78KOR';
-        case ISA.ISA56800EX:    return 'Freescale 56800EX DSC';
-        case ISA.BA1:           return 'Beyond BA1';
-        case ISA.BA2:           return 'Beyond BA2';
-        case ISA.XCORE:         return 'XMOS xCORE';
-        case ISA.MCHP_PIC:      return 'Microchip 8-bit PIC(r)';
-        case ISA.KM32:          return 'KM211 KM32';
-        case ISA.KMX32:         return 'KM211 KMX32';
-        case ISA.EMX16:         return 'KM211 KMX16';
-        case ISA.EMX8:          return 'KM211 KMX8';
-        case ISA.KVARC:         return 'KM211 KVARC';
-        case ISA.CDP:           return 'Paneve CDP';
-        case ISA.COGE:          return 'Cognitive Smart Memory Processor';
-        case ISA.COOL:          return 'Bluechip CoolEngine';
-        case ISA.NORC:          return 'Nanoradio Optimized RISC';
-        case ISA.CSR_KALIMBA:   return 'CSR Kalimba';
-        case ISA.Z80:           return 'Zilog Z80';
-        case ISA.VISIUM:        return 'Controls and Data Services VISIUMcore';
-        case ISA.FT32:          return 'FTDI Chip FT32';
-        case ISA.MOXIE:         return 'Moxie processor';
-        case ISA.AMDGPU:        return 'AMD GPU';
-        case ISA.RISCV:         return 'RISC-V';
-        case ISA.BPF:           return 'Linux BPF';
-        case ISA.CSKY:          return 'C-SKY';
+        case ELF.ISA.None:          return 'No machine';
+        case ELF.ISA.M32:           return 'AT&T WE 32100';
+        case ELF.ISA.SPARC:         return 'SUN SPARC';
+        case ELF.ISA.x86:           return 'Intel x86';
+        case ELF.ISA.ISA68K:        return 'Motorola m68k family';
+        case ELF.ISA.ISA88K:        return 'Motorola m88k family';
+        case ELF.ISA.IAMCU:         return 'Intel MCU';
+        case ELF.ISA.ISA860:        return 'Intel 80860';
+        case ELF.ISA.MIPS:          return 'MIPS R3000 big-endian';
+        case ELF.ISA.S370:          return 'IBM System/370';
+        case ELF.ISA.MIPS_RS3_LE:   return 'MIPS R3000 little-endian';
+        case ELF.ISA.PARISC:        return 'HPPA';
+        case ELF.ISA.VPP500:        return 'Fujitsu VPP500';
+        case ELF.ISA.SPARC32PLUS:   return 'Sun\'s "v8plus"';
+        case ELF.ISA.ISA960:        return 'Intel 80960';
+        case ELF.ISA.PPC:           return 'PowerPC';
+        case ELF.ISA.PPC64:         return 'PowerPC 64-bit';
+        case ELF.ISA.S390:          return 'IBM S390';
+        case ELF.ISA.SPU:           return 'IBM SPU/SPC';
+        case ELF.ISA.V800:          return 'NEC V800 series';
+        case ELF.ISA.FR20:          return 'Fujitsu FR20';
+        case ELF.ISA.RH32:          return 'TRW RH-32';
+        case ELF.ISA.RCE:           return 'Motorola RCE';
+        case ELF.ISA.ARM:           return 'ARM';
+        case ELF.ISA.FAKE_ALPHA:    return 'Digital Alpha';
+        case ELF.ISA.SH:            return 'Hitachi SH';
+        case ELF.ISA.SPARCV9:       return 'SPARC v9 64-bit';
+        case ELF.ISA.TRICORE:       return 'Siemens Tricore';
+        case ELF.ISA.ARC:           return 'Argonaut RISC Core';
+        case ELF.ISA.H8_300:        return 'Hitachi H8/300';
+        case ELF.ISA.H8_300H:       return 'Hitachi H8/300H';
+        case ELF.ISA.H8S:           return 'Hitachi H8S';
+        case ELF.ISA.H8_500:        return 'Hitachi H8/500';
+        case ELF.ISA.IA_64:         return 'Intel Merced';
+        case ELF.ISA.MIPS_X:        return 'Stanford MIPS-X';
+        case ELF.ISA.COLDFIRE:      return 'Motorola Coldfire';
+        case ELF.ISA.ISA68HC12:     return 'Motorola M68HC12';
+        case ELF.ISA.MMA:           return 'Fujitsu MMA Multimedia Accelerator';
+        case ELF.ISA.PCP:           return 'Siemens PCP';
+        case ELF.ISA.NCPU:          return 'Sony nCPU embeeded RISC';
+        case ELF.ISA.NDR1:          return 'Denso NDR1 microprocessor';
+        case ELF.ISA.STARCORE:      return 'Motorola Start*Core processor';
+        case ELF.ISA.ME16:          return 'Toyota ME16 processor';
+        case ELF.ISA.ST100:         return 'STMicroelectronic ST100 processor';
+        case ELF.ISA.TINYJ:         return 'Advanced Logic Corp. Tinyj emb.fam';
+        case ELF.ISA.X86_64:        return 'AMD x86-64 architecture';
+        case ELF.ISA.PDSP:          return 'Sony DSP Processor';
+        case ELF.ISA.PDP10:         return 'Digital PDP-10';
+        case ELF.ISA.PDP11:         return 'Digital PDP-11';
+        case ELF.ISA.FX66:          return 'Siemens FX66 microcontroller';
+        case ELF.ISA.ST9PLUS:       return 'STMicroelectronics ST9+ 8/16 mc';
+        case ELF.ISA.ST7:           return 'STmicroelectronics ST7 8 bit mc';
+        case ELF.ISA.ISA68HC16:     return 'Motorola MC68HC16 microcontroller';
+        case ELF.ISA.ISA68HC11:     return 'Motorola MC68HC11 microcontroller';
+        case ELF.ISA.ISA68HC08:     return 'Motorola MC68HC08 microcontroller';
+        case ELF.ISA.ISA68HC05:     return 'Motorola MC68HC05 microcontroller';
+        case ELF.ISA.SVX:           return 'Silicon Graphics SVx';
+        case ELF.ISA.ST19:          return 'STMicroelectronics ST19 8 bit mc';
+        case ELF.ISA.VAX:           return 'Digital VAX';
+        case ELF.ISA.CRIS:          return 'Axis Communications 32-bit emb.proc';
+        case ELF.ISA.JAVELIN:       return 'Infineon Technologies 32-bit emb.proc';
+        case ELF.ISA.FIREPATH:      return 'Element 14 64-bit DSP Processor';
+        case ELF.ISA.ZSP:           return 'LSI Logic 16-bit DSP Processor';
+        case ELF.ISA.MMIX:          return 'Donald Knuth\'s educational 64-bit proc';
+        case ELF.ISA.HUANY:         return 'Harvard University machine-independent object files';
+        case ELF.ISA.PRISM:         return 'SiTera Prism';
+        case ELF.ISA.AVR:           return 'Atmel AVR 8-bit microcontroller';
+        case ELF.ISA.FR30:          return 'Fujitsu FR30';
+        case ELF.ISA.D10V:          return 'Mitsubishi D10V';
+        case ELF.ISA.D30V:          return 'Mitsubishi D30V';
+        case ELF.ISA.V850:          return 'NEC v850';
+        case ELF.ISA.M32R:          return 'Mitsubishi M32R';
+        case ELF.ISA.MN10300:       return 'Matsushita MN10300';
+        case ELF.ISA.MN10200:       return 'Matsushita MN10200';
+        case ELF.ISA.PJ:            return 'picoJava';
+        case ELF.ISA.OPENRISC:      return 'OpenRISC 32-bit embedded processor';
+        case ELF.ISA.ARC_COMPACT:   return 'ARC International ARCompact';
+        case ELF.ISA.XTENSA:        return 'Tensilica Xtensa Architecture';
+        case ELF.ISA.VIDEOCORE:     return 'Alphamosaic VideoCore';
+        case ELF.ISA.TMM_GPP:       return 'Thompson Multimedia General Purpose Proc';
+        case ELF.ISA.NS32K:         return 'National Semi. 32000';
+        case ELF.ISA.TPC:           return 'Tenor Network TPC';
+        case ELF.ISA.SNP1K:         return 'Trebia SNP 1000';
+        case ELF.ISA.ST200:         return 'STMicroelectronics ST200';
+        case ELF.ISA.IP2K:          return 'Ubicom IP2xxx';
+        case ELF.ISA.MAX:           return 'MAX processor';
+        case ELF.ISA.CR:            return 'National Semi. CompactRISC';
+        case ELF.ISA.F2MC16:        return 'Fujitsu F2MC16';
+        case ELF.ISA.MSP430:        return 'Texas Instruments msp430';
+        case ELF.ISA.BLACKFIN:      return 'Analog Devices Blackfin DSP';
+        case ELF.ISA.SE_C33:        return 'Seiko Epson S1C33 family';
+        case ELF.ISA.SEP:           return 'Sharp embedded microprocessor';
+        case ELF.ISA.ARCA:          return 'Arca RISC';
+        case ELF.ISA.UNICORE:       return 'PKU-Unity & MPRC Peking Uni. mc series';
+        case ELF.ISA.EXCESS:        return 'eXcess configurable cpu';
+        case ELF.ISA.DXP:           return 'Icera Semi. Deep Execution Processor';
+        case ELF.ISA.ALTERA_NIOS2:  return 'Altera Nios II';
+        case ELF.ISA.CRX:           return 'National Semi. CompactRISC CRX';
+        case ELF.ISA.XGATE:         return 'Motorola XGATE';
+        case ELF.ISA.C166:          return 'Infineon C16x/XC16x';
+        case ELF.ISA.M16C:          return 'Renesas M16C';
+        case ELF.ISA.DSPIC30F:      return 'Microchip Technology dsPIC30F';
+        case ELF.ISA.CE:            return 'Freescale Communication Engine RISC';
+        case ELF.ISA.M32C:          return 'Renesas M32C';
+        case ELF.ISA.TSK3000:       return 'Altium TSK3000';
+        case ELF.ISA.RS08:          return 'Freescale RS08';
+        case ELF.ISA.SHARC:         return 'Analog Devices SHARC family';
+        case ELF.ISA.ECOG2:         return 'Cyan Technology eCOG2';
+        case ELF.ISA.SCORE7:        return 'Sunplus S+core7 RISC';
+        case ELF.ISA.DSP24:         return 'New Japan Radio (NJR) 24-bit DSP';
+        case ELF.ISA.VIDEOCORE3:    return 'Broadcom VideoCore III';
+        case ELF.ISA.LATTICEMICO32: return 'RISC for Lattice FPGA';
+        case ELF.ISA.SE_C17:        return 'Seiko Epson C17';
+        case ELF.ISA.TI_C6000:      return 'Texas Instruments TMS320C6000 DSP';
+        case ELF.ISA.TI_C2000:      return 'Texas Instruments TMS320C2000 DSP';
+        case ELF.ISA.TI_C5500:      return 'Texas Instruments TMS320C55x DSP';
+        case ELF.ISA.TI_ARP32:      return 'Texas Instruments App. Specific RISC';
+        case ELF.ISA.TI_PRU:        return 'Texas Instruments Prog. Realtime Unit';
+        case ELF.ISA.MMDSP_PLUS:    return 'STMicroelectronics 64bit VLIW DSP';
+        case ELF.ISA.CYPRESS_M8C:   return 'Cypress M8C';
+        case ELF.ISA.R32C:          return 'Renesas R32C';
+        case ELF.ISA.TRIMEDIA:      return 'NXP Semi. TriMedia';
+        case ELF.ISA.QDSP6:         return 'QUALCOMM DSP6';
+        case ELF.ISA.ISA8051:       return 'Intel 8051 and variants';
+        case ELF.ISA.STXP7X:        return 'STMicroelectronics STxP7x';
+        case ELF.ISA.NDS32:         return 'Andes Tech. compact code emb. RISC';
+        case ELF.ISA.ECOG1X:        return 'Cyan Technology eCOG1X';
+        case ELF.ISA.MAXQ30:        return 'Dallas Semi. MAXQ30 mc';
+        case ELF.ISA.XIMO16:        return 'New Japan Radio (NJR) 16-bit DSP';
+        case ELF.ISA.MANIK:         return 'M2000 Reconfigurable RISC';
+        case ELF.ISA.CRAYNV2:       return 'Cray NV2 vector architecture';
+        case ELF.ISA.RX:            return 'Renesas RX';
+        case ELF.ISA.METAG:         return 'Imagination Tech. META';
+        case ELF.ISA.MCST_ELBRUS:   return 'MCST Elbrus';
+        case ELF.ISA.ECOG16:        return 'Cyan Technology eCOG16';
+        case ELF.ISA.CR16:          return 'National Semi. CompactRISC CR16';
+        case ELF.ISA.ETPU:          return 'Freescale Extended Time Processing Unit';
+        case ELF.ISA.SLE9X:         return 'Infineon Tech. SLE9X';
+        case ELF.ISA.L10M:          return 'Intel L10M';
+        case ELF.ISA.K10M:          return 'Intel K10M';
+        case ELF.ISA.AARCH64:       return 'ARM AARCH64';
+        case ELF.ISA.AVR32:         return 'Amtel 32-bit microprocessor';
+        case ELF.ISA.STM8:          return 'STMicroelectronics STM8';
+        case ELF.ISA.TILE64:        return 'Tileta TILE64';
+        case ELF.ISA.TILEPRO:       return 'Tilera TILEPro';
+        case ELF.ISA.MICROBLAZE:    return 'Xilinx MicroBlaze';
+        case ELF.ISA.CUDA:          return 'NVIDIA CUDA';
+        case ELF.ISA.TILEGX:        return 'Tilera TILE-Gx';
+        case ELF.ISA.CLOUDSHIELD:   return 'CloudShield';
+        case ELF.ISA.COREA_1ST:     return 'KIPO-KAIST Core-A 1st gen.';
+        case ELF.ISA.COREA_2ND:     return 'KIPO-KAIST Core-A 2nd gen.';
+        case ELF.ISA.ARC_COMPACT2:  return 'Synopsys ARCompact V2';
+        case ELF.ISA.OPEN8:         return 'Open8 RISC';
+        case ELF.ISA.RL78:          return 'Renesas RL78';
+        case ELF.ISA.VIDEOCORE5:    return 'Broadcom VideoCore V';
+        case ELF.ISA.ISA78KOR:      return 'Renesas 78KOR';
+        case ELF.ISA.ISA56800EX:    return 'Freescale 56800EX DSC';
+        case ELF.ISA.BA1:           return 'Beyond BA1';
+        case ELF.ISA.BA2:           return 'Beyond BA2';
+        case ELF.ISA.XCORE:         return 'XMOS xCORE';
+        case ELF.ISA.MCHP_PIC:      return 'Microchip 8-bit PIC(r)';
+        case ELF.ISA.KM32:          return 'KM211 KM32';
+        case ELF.ISA.KMX32:         return 'KM211 KMX32';
+        case ELF.ISA.EMX16:         return 'KM211 KMX16';
+        case ELF.ISA.EMX8:          return 'KM211 KMX8';
+        case ELF.ISA.KVARC:         return 'KM211 KVARC';
+        case ELF.ISA.CDP:           return 'Paneve CDP';
+        case ELF.ISA.COGE:          return 'Cognitive Smart Memory Processor';
+        case ELF.ISA.COOL:          return 'Bluechip CoolEngine';
+        case ELF.ISA.NORC:          return 'Nanoradio Optimized RISC';
+        case ELF.ISA.CSR_KALIMBA:   return 'CSR Kalimba';
+        case ELF.ISA.Z80:           return 'Zilog Z80';
+        case ELF.ISA.VISIUM:        return 'Controls and Data Services VISIUMcore';
+        case ELF.ISA.FT32:          return 'FTDI Chip FT32';
+        case ELF.ISA.MOXIE:         return 'Moxie processor';
+        case ELF.ISA.AMDGPU:        return 'AMD GPU';
+        case ELF.ISA.RISCV:         return 'RISC-V';
+        case ELF.ISA.BPF:           return 'Linux BPF';
+        case ELF.ISA.CSKY:          return 'C-SKY';
     }
 }
 
-export function abiToString(abi: ABI): string {
+export function abiToString(abi: ELF.ABI): string {
     switch (abi) {
-        case ABI.GNUHurd:        return 'GNU Hurd';
-        case ABI.NovelloModesto: return 'Novello Modesto';
-        case ABI.HPUX:           return 'HP-UX';
-        case ABI.NonStopKernel:  return 'NonStop Kernel';
-        case ABI.FenixOS:        return 'Fenix OS';
-        case ABI.ARMEABI:        return 'ARM EABI';
-        default:
-            return ABI[abi] || abi.toString();
+        case ELF.ABI.GNUHurd:        return 'GNU Hurd';
+        case ELF.ABI.NovelloModesto: return 'Novello Modesto';
+        case ELF.ABI.HPUX:           return 'HP-UX';
+        case ELF.ABI.NonStopKernel:  return 'NonStop Kernel';
+        case ELF.ABI.FenixOS:        return 'Fenix OS';
+        case ELF.ABI.ARMEABI:        return 'ARM EABI';
+        default:                     return ELF.ABI[abi] || abi.toString();
     }
 }
 
-export function objectTypeToString(objectType: ObjectType): string {
-    return ObjectType[objectType] || objectType.toString();
+export function elfTypeToString(elfType: ELF.Type): string {
+    return ELF.Type[elfType] || elfType.toString();
 }
 
-export function programHeaderEntryTypeToString(programHeaderEntryType: ProgramHeaderEntryType): string {
-    switch (programHeaderEntryType) {
-        case ProgramHeaderEntryType.ProgramHeaderTable: return 'Program Header Table';
-        case ProgramHeaderEntryType.GnuEhFrame:         return 'GNU EH frame';
-        case ProgramHeaderEntryType.GnuStack:           return 'GNU stack info';
-        case ProgramHeaderEntryType.GnuRelRo:           return 'GNU ro relocation';
-        default:                                        return ProgramHeaderEntryType[programHeaderEntryType] || programHeaderEntryType.toString();
+export function segmentTypeToString(segmentType: ELF.SegmentType): string {
+    switch (segmentType) {
+        case ELF.SegmentType.ProgramHeaderTable: return 'Program Header Table';
+        case ELF.SegmentType.GnuEhFrame:         return 'GNU EH frame';
+        case ELF.SegmentType.GnuStack:           return 'GNU stack info';
+        case ELF.SegmentType.GnuRelRo:           return 'GNU ro relocation';
+        default:                                 return ELF.SegmentType[segmentType] || segmentType.toString();
     }
 }
 
-export function sectionHeaderEntryTypeToString(sectionHeaderEntryType: SectionHeaderEntryType): string {
-    switch (sectionHeaderEntryType) {
-        case SectionHeaderEntryType.Null:          return 'NULL';
-        case SectionHeaderEntryType.ProgBits:      return 'Prog bits';
-        case SectionHeaderEntryType.SymTab:        return 'Symbol table';
-        case SectionHeaderEntryType.StrTab:        return 'String table';
-        case SectionHeaderEntryType.Rela:          return 'Relocation with addends';
-        case SectionHeaderEntryType.Hash:          return 'Symbol hash table';
-        case SectionHeaderEntryType.Dynamic:       return 'Dynamic';
-        case SectionHeaderEntryType.Note:          return 'Note';
-        case SectionHeaderEntryType.NoBits:        return 'No bits';
-        case SectionHeaderEntryType.Rel:           return 'Relocation';
-        case SectionHeaderEntryType.ShLib:         return 'ShLib';
-        case SectionHeaderEntryType.DynSym:        return 'Dynamic linking symbols';
-        case SectionHeaderEntryType.InitArray:     return 'Init array';
-        case SectionHeaderEntryType.FiniArray:     return 'Fini array';
-        case SectionHeaderEntryType.PreInitArray:  return 'Pre-init array';
-        case SectionHeaderEntryType.Group:         return 'Section group';
-        case SectionHeaderEntryType.ShNdx:         return 'Extended symbol table index';
-        case SectionHeaderEntryType.Num:           return 'Num';
-        case SectionHeaderEntryType.GnuAttributes: return 'GNU object attributes';
-        case SectionHeaderEntryType.GnuHash:       return 'GNU hash';
-        case SectionHeaderEntryType.GnuLibList:    return 'GNU pre-link library list';
-        case SectionHeaderEntryType.GnuVerDef:     return 'GNU version definition';
-        case SectionHeaderEntryType.GnuVerNeed:    return 'GNU version needs';
-        case SectionHeaderEntryType.GnuVerSym:     return 'GNU version symbol table';
-        case SectionHeaderEntryType.RPLExports:    return 'RPL exports';
-        case SectionHeaderEntryType.RPLImports:    return 'RPL imports';
-        case SectionHeaderEntryType.RPLCrcs:       return 'RPL CRCs';
-        case SectionHeaderEntryType.RPLFileInfo:   return 'RPL File Info';
-        default:
-            return SectionHeaderEntryType[sectionHeaderEntryType] || Number(sectionHeaderEntryType).toString();
+export function sectionTypeToString(sectionType: ELF.SectionType): string {
+    switch (sectionType) {
+        case ELF.SectionType.Null:          return 'NULL';
+        case ELF.SectionType.ProgBits:      return 'Prog bits';
+        case ELF.SectionType.SymTab:        return 'Symbol table';
+        case ELF.SectionType.StrTab:        return 'String table';
+        case ELF.SectionType.Rela:          return 'Relocation with addends';
+        case ELF.SectionType.Hash:          return 'Symbol hash table';
+        case ELF.SectionType.Dynamic:       return 'Dynamic';
+        case ELF.SectionType.Note:          return 'Note';
+        case ELF.SectionType.NoBits:        return 'No bits';
+        case ELF.SectionType.Rel:           return 'Relocation';
+        case ELF.SectionType.ShLib:         return 'ShLib';
+        case ELF.SectionType.DynSym:        return 'Dynamic linking symbols';
+        case ELF.SectionType.InitArray:     return 'Init array';
+        case ELF.SectionType.FiniArray:     return 'Fini array';
+        case ELF.SectionType.PreInitArray:  return 'Pre-init array';
+        case ELF.SectionType.Group:         return 'Section group';
+        case ELF.SectionType.ShNdx:         return 'Extended symbol table index';
+        case ELF.SectionType.Num:           return 'Num';
+        case ELF.SectionType.GnuAttributes: return 'GNU object attributes';
+        case ELF.SectionType.GnuHash:       return 'GNU hash';
+        case ELF.SectionType.GnuLibList:    return 'GNU pre-link library list';
+        case ELF.SectionType.GnuVerDef:     return 'GNU version definition';
+        case ELF.SectionType.GnuVerNeed:    return 'GNU version needs';
+        case ELF.SectionType.GnuVerSym:     return 'GNU version symbol table';
+        case ELF.SectionType.RPLExports:    return 'RPL exports';
+        case ELF.SectionType.RPLImports:    return 'RPL imports';
+        case ELF.SectionType.RPLCrcs:       return 'RPL CRCs';
+        case ELF.SectionType.RPLFileInfo:   return 'RPL File Info';
+        default:                            return ELF.SectionType[sectionType] || Number(sectionType).toString();
     }
 }
 
 export function sectionFlagsToString(flags: number | bigint) {
-    // no flags are more than 32 bits
-    flags = Number(flags);
+    flags = Number(flags); // no flags are more than 32 bits
 
     let str = [];
     if (flags & 0x1)       str.push('Writeable');
@@ -279,8 +272,8 @@ export function programHeaderFlagsToString(flags: number) {
     return str.join(' | ');
 }
 
-export function elfFlagsToString(isa: ISA, flags: number): string {
-    if (isa === ISA.ARM) {
+export function elfFlagsToString(isa: ELF.ISA, flags: number): string {
+    if (isa === ELF.ISA.ARM) {
         const ver = ((flags & 0xFF000000) >> 24);
         let str = [`Version: ${ver}`];
 
@@ -294,19 +287,19 @@ export function elfFlagsToString(isa: ISA, flags: number): string {
     return flags.toString();
 }
 
-export function symbolTypeToString(type: SymbolType) {
+export function symbolTypeToString(type: ELF.SymbolType) {
     switch (type) {
-        case SymbolType.RelocationExpression:       return "Relocation Expression";
-        case SymbolType.SignedRelocationExpression: return "Signed Relocation Expression";
-        case SymbolType.ThreadLocalStorage:         return "Thread Local Storage";
-        default: return SymbolType[type] || type.toString();
+        case ELF.SymbolType.RelocationExpression:       return 'Relocation Expression';
+        case ELF.SymbolType.SignedRelocationExpression: return 'Signed Relocation Expression';
+        case ELF.SymbolType.ThreadLocalStorage:         return 'Thread Local Storage';
+        default:                                        return ELF.SymbolType[type] || type.toString();
     }
 }
 
-export function symbolBindingToString(binding: SymbolBinding) {
-    return SymbolBinding[binding] || binding.toString();
+export function symbolBindingToString(binding: ELF.SymbolBinding) {
+    return ELF.SymbolBinding[binding] || binding.toString();
 }
 
-export function symbolVisibilityToString(visibility: SymbolVisibility) {
-    return SymbolVisibility[visibility] || visibility.toString();
+export function symbolVisibilityToString(visibility: ELF.SymbolVisibility) {
+    return ELF.SymbolVisibility[visibility] || visibility.toString();
 }

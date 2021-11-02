@@ -1,4 +1,3 @@
-
 export function subtract(a: number | bigint, b: number | bigint): number | bigint {
     if (typeof a === 'bigint' && typeof b === 'bigint') {
         return a - b;

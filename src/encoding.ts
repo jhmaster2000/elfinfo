@@ -22,7 +22,7 @@ export function decode(array: Uint8Array, offset: number, length: number): strin
     if (_decode) {
         return _decode(array, offset, length);
     } else {
-        throw new Error("There is no supported utf-8 decoder");
+        throw new Error('There is no supported utf-8 decoder');
     }
 }
 

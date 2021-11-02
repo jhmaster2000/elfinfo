@@ -1,7 +1,6 @@
-import * as elfinfo from './index';
 import { decode, encode } from './encoding';
 import { file, Reader } from './reader';
-import { ELFSection, SectionHeaderEntryType, RPLCrcSection, RPLFileInfoSection, RPLFileInfo } from './types';
+import * as ELF from './types';
 import { writeBufferToBuffer } from './writer';
 
 export namespace RPL {
@@ -18,7 +17,7 @@ export namespace RPL {
         return crcs;
     }
 
-    export async function readFileInfoSection(fh: Reader, offset: number, size: number, bigEndian: boolean): Promise<RPLFileInfo> {
+    export async function readFileInfoSection(fh: Reader, offset: number, size: number, bigEndian: boolean): Promise<ELF.RPLFileInfo> {
         if (size < 0x60) throw new Error('RPL_FILEINFO section is too small, must be at least 0x60 in size.');
 
         const view = await fh.view(0x60, offset);
@@ -26,18 +25,18 @@ export namespace RPL {
         const readUInt16 = (ix: number) => view.getUint16(ix, !bigEndian);
         const readUInt32 = (ix: number) => view.getUint32(ix, !bigEndian);
         const readUInt64 = (ix: number) => view.getBigUint64(ix, !bigEndian);
-        const readSInt8  = (ix: number) => view.getInt8(ix); //readUint8(ix)  <<  8 >>  8;
+        const readSInt8  = (ix: number) => view.getInt8(ix); //readUint8(ix)  << 24 >> 24;
         const readSInt16 = (ix: number) => view.getInt16(ix, !bigEndian); //readUInt16(ix) << 16 >> 16;
         const readSInt32 = (ix: number) => view.getInt32(ix, !bigEndian); //readUInt32(ix) <<  0 >> 32;
         const readSInt64 = (ix: number) => view.getBigInt64(ix, !bigEndian); //BigInt.asIntN(64, readUInt64(ix));
 
-        const fileinfo: RPLFileInfo = {} as RPLFileInfo;
+        const fileinfo: ELF.RPLFileInfo = new ELF.RPLFileInfo();
 
         let ix = 0;
         const magic: string = readUInt16(ix).toString(16).toUpperCase();
         if (magic !== 'CAFE') throw new Error(`RPL_FILEINFO section magic number is invalid! Expected "CAFE", got "${magic}"`);
 
-        fileinfo.magic               = magic;          ix += 2;
+        /*fileinfo.magic               = magic;*/      ix += 2;
         fileinfo.version             = readUInt16(ix); ix += 2;
         fileinfo.textSize            = readUInt32(ix); ix += 4;
         fileinfo.textAlign           = readUInt32(ix); ix += 4;
@@ -85,15 +84,15 @@ export namespace RPL {
         return fileinfo;
     }
 
-    export function isCrcSection(section: ELFSection): section is RPLCrcSection {
-        return section.type === SectionHeaderEntryType.RPLCrcs;
+    export function isCrcSection(section: ELF.Section): section is ELF.RPLCrcSection {
+        return section.type === ELF.SectionType.RPLCrcs;
     }
 
-    export function isFileInfoSection(section: ELFSection): section is RPLFileInfoSection {
-        return section.type === SectionHeaderEntryType.RPLFileInfo;
+    export function isFileInfoSection(section: ELF.Section): section is ELF.RPLFileInfoSection {
+        return section.type === ELF.SectionType.RPLFileInfo;
     }
 
-    export function packCrcSection(section: RPLCrcSection): Buffer {
+    export function packCrcSection(section: ELF.RPLCrcSection): Buffer {
         const databuf = Buffer.alloc(section.size);
         let ix = 0;
 
@@ -102,7 +101,7 @@ export namespace RPL {
         return databuf;
     }
 
-    export function packFileInfoSection(section: RPLFileInfoSection): Buffer {
+    export function packFileInfoSection(section: ELF.RPLFileInfoSection): Buffer {
         const databuf = Buffer.alloc(section.size);
         let ix = 0;
         writeBufferToBuffer(databuf, encode(parseInt(section.fileinfo.magic, 16), 2), ix); ix += 2;

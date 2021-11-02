@@ -1,6 +1,9 @@
 import { isRelocationSection, isStringSection, isSymbolSection } from './sections';
-import { SectionHeaderEntryType, ELFOpenResult } from './types';
-import { ELF } from './types';
+import {
+    abiToString, elfFlagsToString, isaToString, elfTypeToString, sectionFlagsToString, sectionTypeToString,
+    symbolBindingToString, symbolTypeToString, symbolVisibilityToString
+} from './strings';
+import * as ELF from './types';
 
 export function hexdump(buf: Buffer): string {
     const basestr = buf.toString('hex').toUpperCase();
@@ -22,38 +25,56 @@ function toHex(n: number | bigint | undefined, padamount: number = 0, lowercase:
     }
 }
 
-/**
- * Print debug information for an ELF file, similar to readelf or objdump.
- * @param {ELF | ELFOpenResult} file the ELF file data to print debug info for.
- * @returns {string} Debug outpt.
- */
-export function debug(elf_: ELF | ELFOpenResult): string {
-    let result = "";
+interface DebugOptions {
+    printSections?: boolean;
+    printStrings?: boolean;
+    printSymbols?: boolean;
+    printRelocations?: boolean;
+}
 
-    const elf: ELF | undefined = (elf_ as any).elf ? (elf_ as ELFOpenResult).elf : (elf_ as ELF);
+const DefaultDebugOptions: DebugOptions = {
+    printSections: false,
+    printStrings: false,
+    printSymbols: false,
+    printRelocations: false
+};
+
+/** Print debug information for an ELF file, similar to readelf or objdump.
+  * @param {ELF.File} elf The parsed ELF file data to print debug info for.
+  * @param {(boolean | DebugOptions)} [options=DefaultDebugOptions] If true, all debug info will be printed.
+  * @returns {string} The debug info for the ELF file.
+  */
+export function debug(elf: ELF.File, options: boolean | DebugOptions = DefaultDebugOptions): string {
+    let result = '';
+
+    if (options === false) options = DefaultDebugOptions;
+    if (options === true) options = {
+        printSections: true, printStrings: true, printSymbols: true, printRelocations: true
+    } as DebugOptions;
+
+    if (!options.printSections && (options.printStrings || options.printSymbols || options.printRelocations)) options.printSections = true;
 
     if (elf) {
-        const addrpad = elf.bits ? elf.bits / 4 : 8;
-        result += `Path: ${elf.path}\n`;
-        result += `Class:                             ${elf.classDescription} (${elf.class})\n`;
-        result += `Bits:                              ${elf.bits} bits\n`;
-        result += `Data:                              ${elf.endianDescription} (${elf.endian})\n`;
-        result += `Version:                           ${elf.version}\n`;
-        result += `OS/ABI:                            ${elf.abiDescription} (${toHex(elf.abi)})\n`;
-        result += `ABI version:                       ${elf.abiVersion}\n`;
-        result += `Type:                              ${elf.typeDescription} (${toHex(elf.type)})\n`;
-        result += `ISA/machine:                       ${elf.isaDescription} (${toHex(elf.isa)})\n`;
-        result += `ISA/machine version:               ${elf.isaVersion}\n`;
-        result += `Entry Point:                       ${toHex(elf.entryPoint)}\n`;
-        result += `Program header offset:             ${toHex(elf.programHeaderOffset)}\n`;
-        result += `Section header offset:             ${toHex(elf.sectionHeaderOffset)}\n`;
-        result += `Flags:                             ${elf.flagsDescription} (${toHex(elf.flags)})\n`;
-        result += `Program headers:                   ${elf.programHeaderEntrySize} bytes × ${elf.segments.length}\n`;
-        result += `Section headers:                   ${elf.sectionHeaderEntrySize} bytes × ${elf.sections.length}\n`;
-        result += `String table section index:        ${elf.shstrIndex}\n`;
+        const addrpad = elf.header.class ? elf.header.class * 8 : 8;
+        result += `Class:                             ${elf.header.class ? elf.header.class === ELF.Class.ELF32 ? 'ELF32' : 'ELF64' : 'None'} (${elf.header.class})\n`;
+        result += `Bits:                              ${elf.header.bits} bits\n`;
+        result += `Data:                              ${elf.header.endian ? elf.header.endian === ELF.Endian.Big ? 'Big Endian' : 'Little Endian' : 'None'} (${elf.header.endian})\n`;
+        result += `Version:                           ${elf.header.version}\n`;
+        result += `OS/ABI:                            ${abiToString(elf.header.abi)} (${toHex(elf.header.abi)})\n`;
+        result += `ABI version:                       ${elf.header.abiVersion}\n`;
+        result += `Type:                              ${elfTypeToString(elf.header.type)} (${toHex(elf.header.type)})\n`;
+        result += `ISA/machine:                       ${isaToString(elf.header.isa)} (${toHex(elf.header.isa)})\n`;
+        result += `ISA/machine version:               ${elf.header.isaVersion}\n`;
+        result += `Entry Point:                       ${toHex(elf.header.entryPoint)}\n`;
+        result += `Program header offset:             ${toHex(elf.header.programHeadersOffset)}\n`;
+        result += `Section header offset:             ${toHex(elf.header.sectionHeadersOffset)}\n`;
+        result += `Flags:                             ${elfFlagsToString(elf.header.isa, elf.header.flags)} (${toHex(elf.header.flags)})\n`;
+        //TODO: result += `Program headers:                   ${elf.programHeaderEntrySize} bytes × ${elf.segments.length}\n`;
+        result += `Section headers:                   ${elf.header.sectionHeadersEntrySize} bytes × ${elf.sections.length}\n`;
+        result += `String table section index:        ${elf.header.shstrIndex}\n`;
 
-        if (elf.segments.length) {
-
+        // TODO: Segments support
+        /*if (elf.segments.length) {
             result += '\n\nProgram Header Entries:\n\n';
             if (elf.bits === 32) {
                 result += '    #   Type                 Offset     VirtAddr   PhysAddr   FileSize   MemSiz     Align      Flags\n';
@@ -71,12 +92,11 @@ export function debug(elf_: ELF | ELFOpenResult): string {
                 result += `${toHex(header.align, 8)} `;
                 result += `${header.flagsDescription}\n`;
             }
-        }
+        }*/
 
         if (elf.sections.length) {
-
-            result += '\n\n\Sections:\n\n';
-            if (elf.bits === 32) {
+            result += '\n\nSections:\n\n';
+            if (elf.header.class === ELF.Class.ELF32) {
                 result += '    #   Name               Type                             Address    Offset     Size       EntSize    Link  Info  Align      Flags\n';
             } else {
                 result += '    #   Name               Type                             Address            Offset             Size               EntSize            Link  Info  Align      Flags\n';
@@ -84,48 +104,46 @@ export function debug(elf_: ELF | ELFOpenResult): string {
 
             for (const section of elf.sections) {
                 result += `    ${section.index.toString().padEnd(3)} `
-                result += `${section.name.substr(0, 18).padEnd(18)} `;
-                result += `${section.typeDescription.padEnd(32)} `;
+                result += `${section.getName(elf).substr(0, 18).padEnd(18)} `;
+                result += `${sectionTypeToString(section.type).padEnd(32)} `;
                 result += `${toHex(section.addr, addrpad)} `;
                 result += `${toHex(section.offset, addrpad)} `;
                 result += `${toHex(section.size, addrpad)} `;
-                result += `${toHex(section.entsize, addrpad)} `;
+                result += `${toHex(section.entSize, addrpad)} `;
                 result += `${(section.link || '').toString().padStart(4)}  `;
                 result += `${(section.info || '').toString().padStart(4)}  `;
-                result += `${toHex(section.addralign, 8)} `;
-                result += `${section.flagsDescription} (${section.flags})\n`;
+                result += `${toHex(section.addrAlign, 8)} `;
+                result += `${sectionFlagsToString(section.flags)} (${section.flags})\n`;
             }
         }
 
         for (const section of elf.sections) {
-            result += `\n\n${section.typeDescription} section #${section.index} ${section.name}:\n\n`;
+            if (!options.printSections) break;
+            result += `\n#${section.index} - ${sectionTypeToString(section.type)} section ${section.getName(elf)}:\n`;
 
-            if (isSymbolSection(section)) {
-                if (elf.bits === 32) {
+            if (isSymbolSection(section) && options.printSymbols) {
+                if (elf.header.class === ELF.Class.ELF32) {
                     result += '      #   Value      Size       Type                         Bind   Visibility Name\n';
                 } else {
                     result += '      #   Value              Info       Type                         Bind   Visibility Name\n';
-                }// 0x0000000000000000
+                }
 
                 let ix = 0;
                 for (const symbol of section.symbols) {
                     result += `    ${(ix++).toString().padStart(5)} `;
                     result += `${toHex(symbol.value, addrpad)} `;
                     result += `${toHex(symbol.size, 8)} `;
-                    result += `${symbol.typeDescription.padEnd(28)} `;
-                    result += `${symbol.bindingDescription.padEnd(6)} `;
-                    result += `${symbol.visibilityDescription.padEnd(10)} `;
-                    result += `${symbol.name}\n`;
+                    result += `${symbolTypeToString(symbol.type).padEnd(28)} `;
+                    result += `${symbolBindingToString(symbol.binding).padEnd(6)} `;
+                    result += `${symbolVisibilityToString(symbol.visibility).padEnd(10)} `;
+                    result += `${symbol.getName(elf)}\n`;
                 }
-            }
-            else if (isStringSection(section)) {
+            } else if (isStringSection(section) && options.printStrings) {
                 for (const string in section.strings) {
                     result += `  #${string} - ${section.strings[string]}\n`;
                 }
-            }
-            else if (isRelocationSection(section)) {
-                `  Offset          Info           Type           Sym. Value    Sym. Name + Addend`
-                if (elf.bits === 32) {
+            } else if (isRelocationSection(section) && options.printRelocations) {
+                if (elf.header.class === ELF.Class.ELF32) {
                     result += '        # Offset     Size       Type                         Bind   Visibility Name\n';
                 } else {
                     result += '        # Offset             Size               Type                         Bind   Visibility Name\n';
@@ -135,18 +153,14 @@ export function debug(elf_: ELF | ELFOpenResult): string {
                 for (const relocation of section.relocations) {
                     result += `    ${(ix++).toString().padStart(5)} `;
                     result += `${toHex(relocation.addr, addrpad)} `;
-                    result += `${toHex(relocation.info, addrpad)} `;
+                    result += `${toHex(<number>relocation.info, addrpad)} `;
                     result += '\n';
                 }
             }
-            else {
-            }
         }
-
     } else {
-        result += "<undefined>";
+        result += '<undefined>';
     }
-
 
     return result;
 }
