@@ -4,6 +4,12 @@ import {
     symbolBindingToString, symbolTypeToString, symbolVisibilityToString
 } from './strings';
 import * as ELF from './types';
+import { Table } from 'console-table-printer';
+import { encode } from './encoding';
+
+type TableColor = 'red' | 'green' | 'yellow' | 'white' | 'blue' | 'magenta' | 'cyan' | 'white_bold';
+
+const hex = (n: number, prefix = '0x', pad = 0): string => prefix + n.toString(16).toUpperCase().padStart(pad, '0');
 
 export function hexdump(buf: Buffer): string {
     const basestr = buf.toString('hex').toUpperCase();
@@ -163,4 +169,86 @@ export function debug(elf: ELF.File, options: boolean | DebugOptions = DefaultDe
     }
 
     return result;
+}
+
+export function printHeaderTable(elf: ELF.File): void {
+    const t = new Table({
+        title: 'ELF Header',
+        rowSeparator: true,
+        columns: [
+            { name: '0', alignment: 'left', color: <TableColor>'white',  title: 'Key'   },
+            { name: '1', alignment: 'left', color: <TableColor>'yellow', title: 'Value' },
+            { name: '2', alignment: 'left', color: <TableColor>'cyan',   title: 'Info'  },
+        ]
+    });
+    t.addRow(['Magic',              hexdump(encode(elf.header.magic)), elf.header.magic.slice(1)]);
+    t.addRow(['Class',              elf.header.class,                  elf.header.class ? elf.header.class === ELF.Class.ELF32 ? 'ELF32' : 'ELF64' : 'None']);
+    t.addRow(['Endian',             elf.header.endian,                 elf.header.endian ? elf.header.endian === ELF.Endian.Little ? 'Little' : 'Big' : 'None']);
+    t.addRow(['Version',            elf.header.version,                elf.header.version ? elf.header.version === ELF.Version.Current ? 'Current' : 'Unknown' : 'None']);
+    t.addRow(['ABI',                hex(elf.header.abi),               abiToString(elf.header.abi)]);
+    t.addRow(['ABI Version',        hex(elf.header.abiVersion)]);
+    t.addRow(['Type',               hex(elf.header.type),              elfTypeToString(elf.header.type)]);
+    t.addRow(['ISA',                hex(elf.header.isa),               isaToString(elf.header.isa)]);
+    t.addRow(['ISA Version',        hex(elf.header.isaVersion)]);
+    t.addRow(['Entrypoint',         hex(<number>elf.header.entryPoint)]);
+    t.addRow(['Prog H. Offset',     hex(elf.header.programHeadersOffset)]);
+    t.addRow(['Sect H. Offset',     hex(elf.header.sectionHeadersOffset)]);
+    t.addRow(['Flags',              hex(elf.header.flags),             elfFlagsToString(elf.header.isa, elf.header.flags)]);
+    t.addRow(['ELF Header Size',    hex(elf.header.headerSize)]);
+    t.addRow(['Prog H. size',       hex(elf.header.programHeadersEntrySize)]);
+    t.addRow(['Prog H. count',      elf.header.programHeadersEntryCount]);
+    t.addRow(['Size H. size',       hex(elf.header.sectionHeadersEntrySize)]);
+    t.addRow(['Size H. count',      elf.header.sectionHeadersEntryCount]);
+    t.addRow(['Size H. strtab Idx', elf.header.shstrIndex]);
+    t.printTable();
+}
+
+export function printSectionsTable(elf: ELF.File): void {
+    const t = new Table({
+        title: `Number of Sections: ${elf.sections.length}`,
+        rowSeparator: true,
+        columns: [
+            { name: 'Index',     alignment: 'left', color: <TableColor>'white_bold' },
+            { name: 'Name',      alignment: 'left' },
+            { name: 'Name Offs', alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Type',      alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Flags',     alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Addr',      alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Offset',    alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Size',      alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Link',      alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Info',      alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Align',     alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Ent Size',  alignment: 'left', color: <TableColor>'yellow' },
+        ]
+    });
+
+    elf.sections.forEach(section => {
+        let color: TableColor = 'white';
+        const name = section.getName(elf);
+        if (section.type === ELF.SectionType.Null)        color = 'red';
+        if (section.type === ELF.SectionType.SymTab)      color = 'cyan';
+        if (section.type === ELF.SectionType.StrTab)      color = 'blue';
+        if (section.type === ELF.SectionType.Rela)        color = 'green';
+        if (section.type === ELF.SectionType.Rela)        color = 'green';
+        if (section.type === ELF.SectionType.RPLCrcs)     color = 'magenta';
+        if (section.type === ELF.SectionType.RPLFileInfo) color = 'magenta';
+        if (section.type === ELF.SectionType.NoBits)      color = 'white_bold';
+
+        t.addRow({
+            'Index': section.index,
+            'Name': name,
+            'Name Offs': hex(section.nameOffset),
+            'Type': hex(section.type),
+            'Flags': hex(section.flags),
+            'Addr': hex(<number>section.addr),
+            'Offset': hex(section.offset),
+            'Size': hex(section.size),
+            'Link': section.link,
+            'Info': section.info,
+            'Align': hex(section.addrAlign),
+            'Ent Size': hex(section.entSize)
+        }, { color: color });
+    });
+    t.printTable();
 }

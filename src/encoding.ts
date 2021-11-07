@@ -53,7 +53,7 @@ function toHexSInt(bits: number, number: number): string {
 
 export function encode(input: string | number, bytesAlign: number = 0, signed: boolean = false, encoding: BufferEncoding = 'utf-8'): Buffer {
     if (typeof input === 'string') return encodeString(input, encoding);
-    if (typeof input === 'number') return encodeNumber(input, bytesAlign, signed);
+    if (typeof input === 'number') return encodeNumber(Math.floor(input), Math.floor(bytesAlign), signed);
     throw new Error('Unexpected input type "' + typeof input + '".');
 }
 
@@ -62,6 +62,7 @@ function encodeString(string: string, encoding: BufferEncoding = 'utf-8'): Buffe
 }
 
 function encodeNumber(number: number, bytesAlign: number = 0, signed: boolean = false): Buffer {
+    if (!signed) number = Math.abs(number);
     const tmpstr: string = signed ? toHexSInt((bytesAlign * 8) || 8, number) : number.toString(16);
     return Buffer.from(tmpstr.padStart(tmpstr.length + Number(tmpstr.length % 2 !== 0), '0').padStart(bytesAlign * 2, '0'), 'hex');
 }

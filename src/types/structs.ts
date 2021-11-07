@@ -33,7 +33,7 @@ export namespace Structs {
         /** Flags for the ISA used. The interpretation is ISA specific. */
         protected _flags: uint32 = 0x00000000;                //! uint32
         /** The size of this ELF header in bytes. */
-        readonly headerSize: uint16 = 0x0000;                //? uint16
+        readonly  headerSize: uint16 = 0x0034 as const;       //? uint16 // TODO: Unhardcode for 64-bit support
         /** The size of 1 program header entry. */
         protected _programHeadersEntrySize: uint16 = 0x0000;  //? uint16
         /** The total number of program header entries in the file. */

@@ -148,10 +148,8 @@ async function readRelocationSection(fh: Reader, offset: number, size: number,
     }
 }*/
 
-export async function readSectionHeaderEntries(fh: Reader,
-    sh_off: number | bigint, sh_entsize: number, sh_num: number,
-    bits: number, bigEndian: boolean, eSHStrNdx: number,
-    readSymbolData: boolean, elfType: ELF.Type): Promise<ELF.Section[]> {
+export async function readSectionHeaderEntries(fh: Reader, sh_off: number | bigint, sh_entsize: number, sh_num: number, bits: number,
+    bigEndian: boolean, eSHStrNdx: number, readSymbolData: boolean, elfType: ELF.Type): Promise<ELF.Section[]> {
 
     if (sh_num === 0) return [];
 
@@ -168,23 +166,23 @@ export async function readSectionHeaderEntries(fh: Reader,
         let ix = 8;
         let flags, addr, offset, size, link, info, addralign, entsize;
         if (bits === 32) {
-            flags = readUInt32(ix); ix += 4;
-            addr = readUInt32(ix); ix += 4;
-            offset = readUInt32(ix); ix += 4;
-            size = readUInt32(ix); ix += 4;
-            link = readUInt32(ix); ix += 4;
-            info = readUInt32(ix); ix += 4;
+            flags     = readUInt32(ix); ix += 4;
+            addr      = readUInt32(ix); ix += 4;
+            offset    = readUInt32(ix); ix += 4;
+            size      = readUInt32(ix); ix += 4;
+            link      = readUInt32(ix); ix += 4;
+            info      = readUInt32(ix); ix += 4;
             addralign = readUInt32(ix); ix += 4;
-            entsize = readUInt32(ix); ix += 4;
+            entsize   = readUInt32(ix); ix += 4;
         } else {
-            flags = toNumberSafe(readUInt64(ix)); ix += 8;
-            addr = readUInt64(ix); ix += 8;
-            offset = toNumberSafe(readUInt64(ix)); ix += 8;
-            size = toNumberSafe(readUInt64(ix)); ix += 8;
-            link = readUInt32(ix); ix += 4;
-            info = readUInt32(ix); ix += 4;
+            flags     = toNumberSafe(readUInt64(ix)); ix += 8;
+            addr      = readUInt64(ix); ix += 8;
+            offset    = toNumberSafe(readUInt64(ix)); ix += 8;
+            size      = toNumberSafe(readUInt64(ix)); ix += 8;
+            link      = readUInt32(ix); ix += 4;
+            info      = readUInt32(ix); ix += 4;
             addralign = toNumberSafe(readUInt64(ix)); ix += 8;
-            entsize = toNumberSafe(readUInt64(ix)); ix += 8;
+            entsize   = toNumberSafe(readUInt64(ix)); ix += 8;
         }
 
         let section = new ELF.Section();
