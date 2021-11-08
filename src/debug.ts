@@ -204,6 +204,10 @@ export function printHeaderTable(elf: ELF.File): void {
 }
 
 export function printSectionsTable(elf: ELF.File): void {
+    let shstrtab: ELF.Section | null | undefined = elf.sections[elf.header.shstrIndex];
+    if (shstrtab?.type !== ELF.SectionType.StrTab) shstrtab = undefined;
+    else if (shstrtab?.flags && shstrtab?.flags & ELF.SectionFlags.Compressed) shstrtab = null;
+
     const t = new Table({
         title: `Number of Sections: ${elf.sections.length}`,
         rowSeparator: true,
@@ -237,7 +241,7 @@ export function printSectionsTable(elf: ELF.File): void {
 
         t.addRow({
             'Index': section.index,
-            'Name': name,
+            'Name': shstrtab === null ? '<compressed>' : !shstrtab ? '<none>' : name,
             'Name Offs': hex(section.nameOffset),
             'Type': hex(section.type),
             'Flags': hex(section.flags),

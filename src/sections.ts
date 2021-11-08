@@ -8,6 +8,7 @@ import { writeBufferToBuffer } from './writer';
 //const MAX_SECTION_LOAD_SIZE = 0x1000000;
 
 export function getString(strings: { [index: number]: string; }, index: number): string {
+    if (!Object.keys(strings).length) return '<compressed>';
     let str = strings[index];
     if (!str) {
         // both GCC and clang have a tendency to
@@ -23,7 +24,7 @@ export function getString(strings: { [index: number]: string; }, index: number):
             }
         }
     }
-    return str;
+    return str || '<error>';
 }
 
 async function readStringSection(fh: Reader, offset: number | bigint, size: number | bigint): Promise<{ [index: number]: string }> {
@@ -206,7 +207,8 @@ export async function readSectionHeaderEntries(fh: Reader, sh_off: number | bigi
     for (const section of result) {
         if (isStringSection(section)) {
             const { size, offset } = section;
-            section.strings = await readStringSection(fh, offset, size);
+            if (section.flags & ELF.SectionFlags.Compressed) section.strings = {};
+            else section.strings = await readStringSection(fh, offset, size);
         }
     }
 
@@ -214,7 +216,8 @@ export async function readSectionHeaderEntries(fh: Reader, sh_off: number | bigi
     for (const section of result) {
         if (isSymbolSection(section)) {
             const { index, size, offset, entSize, link } = section;
-            section.symbols = await readSymbolsSection(fh, offset, size, entSize, bigEndian, bits, index);
+            if (section.flags & ELF.SectionFlags.Compressed) section.symbols = [];
+            else section.symbols = await readSymbolsSection(fh, offset, size, entSize, bigEndian, bits, index);
 
             if (link >= 0 && link < result.length) {
                 const stringsSection = result[link];
@@ -228,7 +231,8 @@ export async function readSectionHeaderEntries(fh: Reader, sh_off: number | bigi
 
         if (isRelocationSection(section)) {
             const { size, offset, entSize } = section;
-            section.relocations = await readRelocationSection(fh, offset, size, entSize, bigEndian, bits, section.type === ELF.SectionType.Rela);
+            if (section.flags & ELF.SectionFlags.Compressed) section.relocations = [];
+            else section.relocations = await readRelocationSection(fh, offset, size, entSize, bigEndian, bits, section.type === ELF.SectionType.Rela);
         }
     }
 

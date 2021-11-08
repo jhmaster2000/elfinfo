@@ -20,7 +20,7 @@ export class Section extends Structs.Section {
 
         if (strSection.strings) {
             if (this.nameOffset === 0) return this.type ? 'SECTION' + this.index : '<null>';
-            else return getString(strSection.strings, this.nameOffset);;
+            else return getString(strSection.strings, this.nameOffset);
         }
         return '<null>';
     }

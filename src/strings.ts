@@ -202,7 +202,7 @@ export function elfTypeToString(elfType: ELF.Type): string {
 
 export function segmentTypeToString(segmentType: ELF.SegmentType): string {
     switch (segmentType) {
-        case ELF.SegmentType.ProgramHeaderTable: return 'Program Header Table';
+        case ELF.SegmentType.ProgHeaderTable: return 'Program Header Table';
         case ELF.SegmentType.GnuEhFrame:         return 'GNU EH frame';
         case ELF.SegmentType.GnuStack:           return 'GNU stack info';
         case ELF.SegmentType.GnuRelRo:           return 'GNU ro relocation';
@@ -247,19 +247,21 @@ export function sectionTypeToString(sectionType: ELF.SectionType): string {
 export function sectionFlagsToString(flags: number | bigint) {
     flags = Number(flags); // no flags are more than 32 bits
 
-    let str = [];
-    if (flags & 0x1)       str.push('Writeable');
-    if (flags & 0x2)       str.push('Alloc');
-    if (flags & 0x4)       str.push('Executable');
-    if (flags & 0x10)      str.push('Merge');
-    if (flags & 0x20)      str.push('Strings');
-    if (flags & 0x40)      str.push('Info Link');
-    if (flags & 0x80)      str.push('Link Order');
-    if (flags & 0x100)     str.push('Nonconforming');
-    if (flags & 0x200)     str.push('Group');
-    if (flags & 0x400)     str.push('Thread Local Storage');
-    if (flags & 0x4000000) str.push('Special ordering');
-    if (flags & 0x8000000) str.push('Exclude');
+    let str: string[] = [];
+    if (flags & ELF.SectionFlags.Write)         str.push('Write');
+    if (flags & ELF.SectionFlags.Alloc)         str.push('Alloc');
+    if (flags & ELF.SectionFlags.Executable)    str.push('Exec');
+    if (flags & ELF.SectionFlags.Merge)         str.push('Merge');
+    if (flags & ELF.SectionFlags.Strings)       str.push('Strings');
+    if (flags & ELF.SectionFlags.InfoLink)      str.push('Info Link');
+    if (flags & ELF.SectionFlags.LinkOrder)     str.push('Link Order');
+    if (flags & ELF.SectionFlags.Nonconforming) str.push('Nonconforming');
+    if (flags & ELF.SectionFlags.Group)         str.push('Group');
+    if (flags & ELF.SectionFlags.TLS)           str.push('Thread Local Storage');
+    if (flags & ELF.SectionFlags.Compressed)    str.push('Compressed');
+    if (flags & ELF.SectionFlags.AMD64Large)    str.push('AMD64 Large');
+    if (flags & ELF.SectionFlags.Ordered)       str.push('Ordered');
+    if (flags & ELF.SectionFlags.Exclude)       str.push('Exclude');
     if (str.length === 0) return '<none>';
     return str.join(' | ');
 }
