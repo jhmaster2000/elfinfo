@@ -27,7 +27,16 @@ export class Section extends Structs.Section {
 
     /** The index of this section */
     public index: number = -1;
+    /** The raw binary data of this section */
     public data: Uint8Array = new Uint8Array();
+
+    /** The uncompressed size of this section in bytes, if it's compressed.
+      * If the section is not compressed, this is identical to {@link Section.size}. */
+    get sizeUncompressed() {
+        if (!(this.flags & Enums.SectionFlags.Compressed)) return this.size;
+        if (this.data.byteLength < 4) throw new Error('Invalid or corrupt ELF section. Section is compressed, but the compressed size is invalid.');
+        return Buffer.from(this.data.slice(0, 4)).readUInt32BE();
+    }
 
     /** Offset from the start of the {@link Header.shstrIndex section headers string table} 
       * to the address of this section's name in said table, if any. */

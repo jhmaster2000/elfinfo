@@ -212,18 +212,18 @@ export function printSectionsTable(elf: ELF.File): void {
         title: `Number of Sections: ${elf.sections.length}`,
         rowSeparator: true,
         columns: [
-            { name: 'Index',     alignment: 'left', color: <TableColor>'white_bold' },
-            { name: 'Name',      alignment: 'left' },
-            { name: 'Name Offs', alignment: 'left', color: <TableColor>'yellow' },
-            { name: 'Type',      alignment: 'left', color: <TableColor>'yellow' },
-            { name: 'Flags',     alignment: 'left', color: <TableColor>'yellow' },
-            { name: 'Addr',      alignment: 'left', color: <TableColor>'yellow' },
-            { name: 'Offset',    alignment: 'left', color: <TableColor>'yellow' },
-            { name: 'Size',      alignment: 'left', color: <TableColor>'yellow' },
-            { name: 'Link',      alignment: 'left', color: <TableColor>'yellow' },
-            { name: 'Info',      alignment: 'left', color: <TableColor>'yellow' },
-            { name: 'Align',     alignment: 'left', color: <TableColor>'yellow' },
-            { name: 'Ent Size',  alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Index',        alignment: 'left', color: <TableColor>'white_bold' },
+            { name: 'Name',         alignment: 'left' },
+            { name: 'Name Offs',    alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Type',         alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Flags',        alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Addr',         alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Offset',       alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Size',         alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Link',         alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Info',         alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Align',        alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Ent Size',     alignment: 'left', color: <TableColor>'yellow' },
         ]
     });
 
@@ -256,3 +256,62 @@ export function printSectionsTable(elf: ELF.File): void {
     });
     t.printTable();
 }
+
+// TODO
+export function printCompressionInfoTable(elf: ELF.File): void {
+    let shstrtab: ELF.Section | null | undefined = elf.sections[elf.header.shstrIndex];
+    if (shstrtab?.type !== ELF.SectionType.StrTab) shstrtab = undefined;
+    else if (shstrtab?.flags && shstrtab?.flags & ELF.SectionFlags.Compressed) shstrtab = null;
+
+    const sections: ELF.Section[] = elf.sections.filter(section => section.flags & ELF.SectionFlags.Compressed);
+
+    const t = new Table({
+        title: `Compressed Sections: ${sections.length}`,
+        rowSeparator: true,
+        columns: [
+            { name: 'Index',             alignment: 'left', color: <TableColor>'white_bold' },
+            { name: 'Name',              alignment: 'left' },
+            { name: 'Type',              alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Offset',            alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Compressed',        alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Uncompressed',      alignment: 'left', color: <TableColor>'yellow' },
+            { name: 'Size Diff',         alignment: 'left', color: <TableColor>'green' },
+            { name: 'Compression Ratio', alignment: 'right', color: <TableColor>'cyan' },
+            { name: 'Space Saving',      alignment: 'right', color: <TableColor>'blue' },
+        ]
+    });
+
+    let data = { ratios: [0], savings: [0] };
+    sections.forEach(section => {
+        let color: TableColor = 'white';
+        const name = section.getName(elf);
+        if (section.type === ELF.SectionType.Null)        color = 'red';
+        if (section.type === ELF.SectionType.SymTab)      color = 'cyan';
+        if (section.type === ELF.SectionType.StrTab)      color = 'blue';
+        if (section.type === ELF.SectionType.Rela)        color = 'green';
+        if (section.type === ELF.SectionType.Rela)        color = 'green';
+        if (section.type === ELF.SectionType.RPLCrcs)     color = 'magenta';
+        if (section.type === ELF.SectionType.RPLFileInfo) color = 'magenta';
+        if (section.type === ELF.SectionType.NoBits)      color = 'white_bold';
+
+        data.ratios.push(section.sizeUncompressed / section.size);
+        data.savings.push((1 - section.size / section.sizeUncompressed) * 100);
+
+        t.addRow({
+            'Index': section.index,
+            'Name': shstrtab === null ? '<compressed>' : !shstrtab ? '<none>' : name,
+            'Type': hex(section.type),
+            'Offset': hex(section.offset),
+            'Compressed': hex(section.size),
+            'Uncompressed': hex(section.sizeUncompressed),
+            'Size Diff': '-' + hex(section.sizeUncompressed - section.size),
+            'Compression Ratio': (section.sizeUncompressed / section.size).toFixed(1) + ' bytes : byte',
+            'Space Saving': ((1 - section.size / section.sizeUncompressed) * 100).toFixed(2) + '%'
+        }, { color: color });
+    });
+    t.table.title = `Compressed Sections: ${sections.length} | `
+                  + `Avg. Compression Ratio: ${(data.ratios.reduce((x, y) => x + y) / data.ratios.length).toFixed(1)} bytes : byte | `
+                  + `Avg. Space Saving: ${(data.savings.reduce((x, y) => x + y) / data.savings.length).toFixed(2)}%`;
+    t.printTable();
+}
+
