@@ -1,9 +1,9 @@
 import assert from 'assert';
-import { uint8, uint16, uint32, uint64 } from './primitive';
-import * as Enums from './enums';
-import { Structs } from './structs';
-import { File } from './index';
-import { getString } from '../sections';
+import { uint8, uint16, uint32, uint64 } from './primitive.js';
+import * as Enums from './enums.js';
+import { Structs } from './structs.js';
+import { File } from './index.js';
+import { getString } from '../sections.js';
 import { StringSection, SymbolSection } from './sections.js';
 
 /** Breakdown of symbol information stored on {@link Structs.Symbol._info} */

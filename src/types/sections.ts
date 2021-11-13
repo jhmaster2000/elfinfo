@@ -1,12 +1,12 @@
 import assert from 'assert';
-import { uint16, uint32, uint64 } from './primitive';
-import { RPLFileInfo } from './rplfileinfo';
-import { Structs } from './structs';
-import { Symbol as ELFSymbol } from './symbol';
-import * as Enums from './enums';
-import { Relocation } from './relocation';
-import { File } from './index';
-import { isStringSection, getString } from '../sections';
+import { uint16, uint32, uint64 } from './primitive.js';
+import { RPLFileInfo } from './rplfileinfo.js';
+import { Structs } from './structs.js';
+import { Symbol as ELFSymbol } from './symbol.js';
+import * as Enums from './enums.js';
+import { Relocation } from './relocation.js';
+import { File } from './index.js';
+import { isStringSection, getString } from '../sections.js';
 
 export class Section extends Structs.Section {
     constructor() { super(); }

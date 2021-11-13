@@ -1,7 +1,7 @@
-import * as ELF from './types';
-import { uint32, uint64 } from './types/primitive';
-import { add, subtract, toNumberSafe } from './biginthelpers';
-import { isSymbolSection } from './sections';
+import * as ELF from './types/index.js';
+import { uint32, uint64 } from './types/primitive.js';
+import { add, subtract, toNumberSafe } from './biginthelpers.js';
+import { isSymbolSection } from './sections.js';
 
 function filterSymbolsByVirtualAddress(elf: ELF.File, start: uint32 | uint64, size: uint32 | uint64): ELF.Symbol[] {
     const end = add(start, size);

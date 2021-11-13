@@ -1,8 +1,8 @@
 
-import * as ELF from './types';
-import { segmentTypeToString, programHeaderFlagsToString } from './strings';
-import { Reader } from './reader';
-import { toNumberSafe } from './biginthelpers';
+import * as ELF from './types/index.js';
+import { segmentTypeToString, programHeaderFlagsToString } from './strings.js';
+import { Reader } from './reader.js';
+import { toNumberSafe } from './biginthelpers.js';
 
 // TODO: Segments support
 /*export async function readProgramHeaderEntries(

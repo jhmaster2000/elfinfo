@@ -1,7 +1,7 @@
 import assert from 'assert';
-import { uint8, uint16, uint32, uint64 } from './primitive';
-import { Structs } from './structs';
-import * as Enums from './enums';
+import { uint8, uint16, uint32, uint64 } from './primitive.js';
+import { Structs } from './structs.js';
+import * as Enums from './enums.js';
 
 export class Header extends Structs.Header {
     constructor() { super(); }

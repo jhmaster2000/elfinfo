@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { open } from './';
-import { debug } from './debug';
+import { open } from './index.js';
+import { debug } from './debug.js';
 
 (async function main(): Promise<void> {
     const programs = process.argv.slice(2);
@@ -12,6 +12,6 @@ import { debug } from './debug';
             console.log('\n\n');
         }
     } else {
-        console.log(`Usage: elfinfo [program]`);
+        console.log(`Usage: elflib [program]`);
     }
 })().catch(console.error);

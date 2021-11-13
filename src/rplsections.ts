@@ -1,7 +1,7 @@
-import { decode, encode } from './encoding';
-import { file, Reader } from './reader';
-import * as ELF from './types';
-import { writeBufferToBuffer } from './writer';
+import { decode, encode } from './encoding.js';
+import { file, Reader } from './reader.js';
+import * as ELF from './types/index.js';
+import { writeBufferToBuffer } from './writer.js';
 
 export namespace RPL {
     export async function readCrcSection(fh: Reader, offset: number, size: number, entsize: number, bigEndian: boolean): Promise<number[]> {

@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { uint16, uint32, sint32 } from './primitive';
-import { Structs } from './structs';
+import { uint16, uint32, sint32 } from './primitive.js';
+import { Structs } from './structs.js';
 
 export class RPLFileInfo extends Structs.RPLFileInfo {
     constructor() { super(); }

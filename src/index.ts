@@ -1,8 +1,8 @@
-import * as ELF from './types';
-import * as reader from './reader';
-import { readElf, OpenOptions } from './parser';
+import * as elflib from './types/index.js';
+import * as reader from './reader.js';
+import { readElf, OpenOptions } from './parser.js';
 import * as fs from 'fs/promises';
-import { packElf } from './writer';
+import { packElf } from './writer.js';
 
 function isReader(item: any): item is reader.Reader {
     return typeof item === 'object' &&
@@ -26,7 +26,7 @@ function isBlob(item: any): item is reader.Blob {
         typeof item.arrayBuffer === 'function';
 }
 
-function isELF(item: any): item is ELF.File {
+function isELF(item: any): item is elflib.File {
     return typeof item === 'object' &&
     typeof item.header === 'object' &&
     typeof item.header.class === 'number' &&
@@ -57,10 +57,10 @@ const defaultOptions: OpenOptions = { readSymbolData: false };
   * @summary Parsing will be async if a path, blob, or file handle is specified and synchronous if an array or buffer is specified.
   * @param {any} input the path to the ELF file, or the data for the file.
   * @param {function} [callback] When specified, this will be called after the file is done parsing.
-  * @returns {Promise<ELF.File>} a result indicating the success or failure of parsing and the data for the ELF file. */
+  * @returns {Promise<elflib.File>} a result indicating the success or failure of parsing and the data for the ELF file. */
 export function open(input: Uint8Array | ArrayBuffer | Array<number> | reader.Reader | string | number | fs.FileHandle | string | reader.Blob,
-    options?: OpenOptions, callback?: (result: ELF.File) => void | null): Promise<ELF.File> {
-    let promise: Promise<ELF.File>;
+    options?: OpenOptions, callback?: (result: elflib.File) => void | null): Promise<elflib.File> {
+    let promise: Promise<elflib.File>;
 
     if (!options) options = defaultOptions;
 
@@ -79,10 +79,10 @@ export function open(input: Uint8Array | ArrayBuffer | Array<number> | reader.Re
 }
 
 /** Pack an ELF file back to binary.
-  * @param {any} elf the elfinfo ELF object to pack.
+  * @param {any} elf the ELF object to pack.
   * @param {function} [callback] When specified, this will be called after the file is done packing.
   * @returns {Promise<boolean>} a result indicating the success or failure of packing and the binary buffer for the ELF file. */
- export function pack(elf: ELF.File, callback?: (result: boolean) => void | null): Promise<boolean> {
+ export function pack(elf: elflib.File, callback?: (result: boolean) => void | null): Promise<boolean> {
     let promise: Promise<boolean>;
     let packed = packElf(elf);
 
@@ -92,10 +92,10 @@ export function open(input: Uint8Array | ArrayBuffer | Array<number> | reader.Re
     return promise;
 } 
 
-export * from './reader';
-export * from './elf';
-export * from './types';
-export * from './debug';
-export * from './rplsections';
-export * from './sections';
+export * from './reader.js';
+export * from './elf.js';
+export * from './types/index.js';
+export * from './debug.js';
+export * from './rplsections.js';
+export * from './sections.js';
 export { OpenOptions };

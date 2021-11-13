@@ -1,11 +1,11 @@
-import { isRelocationSection, isStringSection, isSymbolSection } from './sections';
+import { isRelocationSection, isStringSection, isSymbolSection } from './sections.js';
 import {
     abiToString, elfFlagsToString, isaToString, elfTypeToString, sectionFlagsToString, sectionTypeToString,
     symbolBindingToString, symbolTypeToString, symbolVisibilityToString
-} from './strings';
-import * as ELF from './types';
+} from './strings.js';
+import * as ELF from './types/index.js';
 import { Table } from 'console-table-printer';
-import { encode } from './encoding';
+import { encode } from './encoding.js';
 
 type TableColor = 'red' | 'green' | 'yellow' | 'white' | 'blue' | 'magenta' | 'cyan' | 'white_bold';
 

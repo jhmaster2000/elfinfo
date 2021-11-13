@@ -1,7 +1,7 @@
-import { encode } from './encoding';
-import { RPL } from './rplsections';
-import { isRelocationSection, isStringSection, isSymbolSection, packRelocationSection, packStringSection, packSymbolSection } from './sections';
-import * as ELF from './types';
+import { encode } from './encoding.js';
+import { RPL } from './rplsections.js';
+import { isRelocationSection, isStringSection, isSymbolSection, packRelocationSection, packStringSection, packSymbolSection } from './sections.js';
+import * as ELF from './types/index.js';
 
 /** Write a buffer of data to a larger buffer from an offset */
 export function writeBufferToBuffer(buf: Buffer, data: Buffer, offset: number): Buffer {

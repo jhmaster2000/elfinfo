@@ -1,9 +1,9 @@
-import * as ELF from './types';
+import * as ELF from './types/index.js';
 //import { readProgramHeaderEntries } from './segments';
 //import { virtualAddressToFileOffset } from './elf';
-import { isSymbolSection, readSectionHeaderEntries } from './sections';
-import { Reader } from './reader';
-import { add, toNumberSafe } from './biginthelpers';
+import { isSymbolSection, readSectionHeaderEntries } from './sections.js';
+import { Reader } from './reader.js';
+import { add, toNumberSafe } from './biginthelpers.js';
 
 /** Options for reading an ELF file. */
 export interface OpenOptions {

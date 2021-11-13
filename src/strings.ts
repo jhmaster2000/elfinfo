@@ -1,4 +1,4 @@
-import * as ELF from './types';
+import * as ELF from './types/index.js';
 
 export function isaToString(isa: ELF.ISA): string {
     switch (isa) {

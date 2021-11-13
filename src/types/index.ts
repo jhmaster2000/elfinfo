@@ -1,6 +1,6 @@
-import { nybble, Union, uint8, uint16, uint32, uint64, sint8, sint16, sint32, sint64 } from './primitive';
-import { Header } from './header';
-import { Section } from './sections';
+import { nybble, Union, uint8, uint16, uint32, uint64, sint8, sint16, sint32, sint64 } from './primitive.js';
+import { Header } from './header.js';
+import { Section } from './sections.js';
 
 export class File {
     /** The main header of the ELF file. */
@@ -11,10 +11,10 @@ export class File {
     sections: Section[] = [];
 }
 
-export * from './rplfileinfo';
-export * from './relocation';
-export * from './sections';
-export * from './structs';
-export * from './symbol';
-export * from './header';
-export * from './enums';
+export * from './rplfileinfo.js';
+export * from './relocation.js';
+export * from './sections.js';
+export * from './structs.js';
+export * from './symbol.js';
+export * from './header.js';
+export * from './enums.js';

@@ -1,13 +1,12 @@
-# elfinfo
-A JavaScript library to parse information from ELF files. Has basic functionality at the 
-moment but will hopefully have stack analysis and disassembly in the near future.
+# ELFLib
+A JavaScript library to parse and write ELF files.
 
 
 ## Usage
 
 ```js
 import * as fs from 'fs/promises';
-import { open } from 'elfinfo';
+import { open } from 'elflib';
 
 // Parse the specified ELF file.
 const elfdata = await fs.readFile('someelffile');
@@ -42,7 +41,7 @@ things mean according to this library:
 - a **Section** refers to the various sections stored in the ELF file. A section has an address which
   is always a virtual (VMA) address. Each section mainly consists of a name, a type, a virtual memory location, and a size.
   There are many kinds of sections, but the main ones are those that contain program data (either code or data), symbols,
-  and strings. elfinfo currently parses string and symbol sections.
+  and strings. elflib currently parses string and symbol sections.
 - a **Symbol** can refer to many different things, but usually refers to a *function* or *variable* used in code.
   There are also symbols for sections and files. Symbols are used for debugging or other analysis and do not affect program execution. Symbols
   are stored in symbol table sections and the names of symbols are stored in string table sections. Stored with the symbol is the
@@ -64,7 +63,7 @@ A debug function is also provided, that spits out readelf/objdump like stuff.
 
 ```js
 import * as fs from 'fs/promises';
-import { open, debug } from 'elfinfo';
+import { open, debug } from 'elflib';
 
 // read the ELF file
 const elfdata = await fs.readFile('./file.elf');
@@ -75,7 +74,7 @@ const fileinfo = debug(info);
 console.log(fileinfo);
 ```
 
-This will produce the following output. This may help you get an idea of what elfinfo parses at the moment:
+This will produce the following output. This may help you get an idea of what elflib parses at the moment:
 
 ```
 Path: someelffile

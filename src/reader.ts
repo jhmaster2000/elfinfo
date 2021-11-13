@@ -1,7 +1,6 @@
 import { FileHandle, open as fsopen } from 'fs/promises';
 import * as fs from 'fs';
 import * as path from 'path';
-import { stringify } from 'querystring';
 
 interface BufferState {
     array?: ArrayBuffer,

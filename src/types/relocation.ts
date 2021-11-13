@@ -1,6 +1,6 @@
 import assert from 'assert';
-import { uint8, uint32, uint64, sint32, sint64 } from './primitive';
-import { Structs } from './structs';
+import { uint8, uint32, uint64, sint32, sint64 } from './primitive.js';
+import { Structs } from './structs.js';
 
 /** Breakdown of relocation information stored on {@link Structs.Relocation._info} */
 export interface RelocationInfo {

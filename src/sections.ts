@@ -1,9 +1,9 @@
-import * as ELF from './types';
-import { Reader } from './reader';
-import { divide, toNumberSafe } from './biginthelpers';
-import { decode, encode } from './encoding';
-import { RPL } from './rplsections';
-import { writeBufferToBuffer } from './writer';
+import * as ELF from './types/index.js';
+import { Reader } from './reader.js';
+import { divide, toNumberSafe } from './biginthelpers.js';
+import { decode, encode } from './encoding.js';
+import { RPL } from './rplsections.js';
+import { writeBufferToBuffer } from './writer.js';
 
 //const MAX_SECTION_LOAD_SIZE = 0x1000000;
 
