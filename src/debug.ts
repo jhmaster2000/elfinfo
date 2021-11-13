@@ -258,7 +258,7 @@ export function printSectionsTable(elf: ELF.File): void {
 }
 
 // TODO
-export function printCompressionInfoTable(elf: ELF.File): void {
+export function printSectionsCompressionInfoTable(elf: ELF.File): void {
     let shstrtab: ELF.Section | null | undefined = elf.sections[elf.header.shstrIndex];
     if (shstrtab?.type !== ELF.SectionType.StrTab) shstrtab = undefined;
     else if (shstrtab?.flags && shstrtab?.flags & ELF.SectionFlags.Compressed) shstrtab = null;
@@ -309,9 +309,9 @@ export function printCompressionInfoTable(elf: ELF.File): void {
             'Space Saving': ((1 - section.size / section.sizeUncompressed) * 100).toFixed(2) + '%'
         }, { color: color });
     });
-    t.table.title = `Compressed Sections: ${sections.length} | `
+    t.table.title = `Compressed Sections: ${sections.length} of ${elf.sections.length} | `
                   + `Avg. Compression Ratio: ${(data.ratios.reduce((x, y) => x + y) / data.ratios.length).toFixed(1)} bytes : byte | `
-                  + `Avg. Space Saving: ${(data.savings.reduce((x, y) => x + y) / data.savings.length).toFixed(2)}%`;
+                  + `Avg. Space Saving: ${(data.savings.reduce((x, y) => x + y) / data.savings.length).toFixed(2)}% (Total: ${(data.savings.reduce((x, y) => x + y) / elf.sections.length).toFixed(2)}%)`;
     t.printTable();
 }
 
