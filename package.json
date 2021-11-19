@@ -50,5 +50,8 @@
     ],
     "bin": {
         "elflib": "dist/src/elflib.js"
+    },
+    "dependencies": {
+        "hash-wasm": "^4.9.0"
     }
 }
