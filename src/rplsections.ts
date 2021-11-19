@@ -1,5 +1,5 @@
 import { decode, encode } from './encoding.js';
-import { file, Reader } from './reader.js';
+import { file, HelperDataView, Reader } from './reader.js';
 import * as ELF from './types/index.js';
 import { writeBufferToBuffer } from './writer.js';
 
@@ -20,48 +20,39 @@ export namespace RPL {
     export async function readFileInfoSection(fh: Reader, offset: number, size: number, bigEndian: boolean): Promise<ELF.RPLFileInfo> {
         if (size < 0x60) throw new Error('RPL_FILEINFO section is too small, must be at least 0x60 in size.');
 
-        const view = await fh.view(0x60, offset);
-        const readUint8  = view.getUint8.bind(view);
-        const readUInt16 = (ix: number) => view.getUint16(ix, !bigEndian);
-        const readUInt32 = (ix: number) => view.getUint32(ix, !bigEndian);
-        const readUInt64 = (ix: number) => view.getBigUint64(ix, !bigEndian);
-        const readSInt8  = (ix: number) => view.getInt8(ix); //readUint8(ix)  << 24 >> 24;
-        const readSInt16 = (ix: number) => view.getInt16(ix, !bigEndian); //readUInt16(ix) << 16 >> 16;
-        const readSInt32 = (ix: number) => view.getInt32(ix, !bigEndian); //readUInt32(ix) <<  0 >> 32;
-        const readSInt64 = (ix: number) => view.getBigInt64(ix, !bigEndian); //BigInt.asIntN(64, readUInt64(ix));
-
+        const view = HelperDataView(await fh.view(0x60, offset), bigEndian);
         const fileinfo: ELF.RPLFileInfo = new ELF.RPLFileInfo();
 
         let ix = 0;
-        const magic: string = readUInt16(ix).toString(16).toUpperCase();
+        const magic: string = view.readUInt16(ix).toString(16).toUpperCase();
         if (magic !== 'CAFE') throw new Error(`RPL_FILEINFO section magic number is invalid! Expected "CAFE", got "${magic}"`);
 
-        /*fileinfo.magic               = magic;*/      ix += 2;
-        fileinfo.version             = readUInt16(ix); ix += 2;
-        fileinfo.textSize            = readUInt32(ix); ix += 4;
-        fileinfo.textAlign           = readUInt32(ix); ix += 4;
-        fileinfo.dataSize            = readUInt32(ix); ix += 4;
-        fileinfo.dataAlign           = readUInt32(ix); ix += 4;
-        fileinfo.loadSize            = readUInt32(ix); ix += 4;
-        fileinfo.loadAlign           = readUInt32(ix); ix += 4;
-        fileinfo.tempSize            = readUInt32(ix); ix += 4;
-        fileinfo.trampAdjust         = readUInt32(ix); ix += 4;
-        fileinfo.sdaBase             = readUInt32(ix); ix += 4;
-        fileinfo.sda2Base            = readUInt32(ix); ix += 4;
-        fileinfo.stackSize           = readUInt32(ix); ix += 4;
-        fileinfo.stringsOffset       = readUInt32(ix); ix += 4;
-        fileinfo.flags               = readUInt32(ix); ix += 4;
-        fileinfo.heapSize            = readUInt32(ix); ix += 4;
-        fileinfo.tagOffset           = readUInt32(ix); ix += 4;
-        fileinfo.minVersion          = readUInt32(ix); ix += 4;
-        fileinfo.compressionLevel    = readSInt32(ix); ix += 4;
-        fileinfo.trampAddition       = readUInt32(ix); ix += 4;
-        fileinfo.fileInfoPad         = readUInt32(ix); ix += 4;
-        fileinfo.cafeSdkVersion      = readUInt32(ix); ix += 4;
-        fileinfo.cafeSdkRevision     = readUInt32(ix); ix += 4;
-        fileinfo.tlsModuleIndex      = readUInt16(ix); ix += 2;
-        fileinfo.tlsAlignShift       = readUInt16(ix); ix += 2;
-        fileinfo.runtimeFileInfoSize = readUInt32(ix); ix += 4;
+        /*fileinfo.magic             = magic;*/        ix += 2;
+        fileinfo.version             = view.readUInt16(ix); ix += 2;
+        fileinfo.textSize            = view.readUInt32(ix); ix += 4;
+        fileinfo.textAlign           = view.readUInt32(ix); ix += 4;
+        fileinfo.dataSize            = view.readUInt32(ix); ix += 4;
+        fileinfo.dataAlign           = view.readUInt32(ix); ix += 4;
+        fileinfo.loadSize            = view.readUInt32(ix); ix += 4;
+        fileinfo.loadAlign           = view.readUInt32(ix); ix += 4;
+        fileinfo.tempSize            = view.readUInt32(ix); ix += 4;
+        fileinfo.trampAdjust         = view.readUInt32(ix); ix += 4;
+        fileinfo.sdaBase             = view.readUInt32(ix); ix += 4;
+        fileinfo.sda2Base            = view.readUInt32(ix); ix += 4;
+        fileinfo.stackSize           = view.readUInt32(ix); ix += 4;
+        fileinfo.stringsOffset       = view.readUInt32(ix); ix += 4;
+        fileinfo.flags               = view.readUInt32(ix); ix += 4;
+        fileinfo.heapSize            = view.readUInt32(ix); ix += 4;
+        fileinfo.tagOffset           = view.readUInt32(ix); ix += 4;
+        fileinfo.minVersion          = view.readUInt32(ix); ix += 4;
+        fileinfo.compressionLevel    = view.readSInt32(ix); ix += 4;
+        fileinfo.trampAddition       = view.readUInt32(ix); ix += 4;
+        fileinfo.fileInfoPad         = view.readUInt32(ix); ix += 4;
+        fileinfo.cafeSdkVersion      = view.readUInt32(ix); ix += 4;
+        fileinfo.cafeSdkRevision     = view.readUInt32(ix); ix += 4;
+        fileinfo.tlsModuleIndex      = view.readUInt16(ix); ix += 2;
+        fileinfo.tlsAlignShift       = view.readUInt16(ix); ix += 2;
+        fileinfo.runtimeFileInfoSize = view.readUInt32(ix); ix += 4;
         fileinfo.strings = [];
 
         // Section does not have strings

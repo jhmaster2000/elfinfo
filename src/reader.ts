@@ -204,3 +204,26 @@ export function blob(item: Blob): Reader {
         view: (length, position) => bufferRead(state, length, position).then(createView)
     }
 }
+
+export interface HelperDataView extends DataView {
+    readUInt8:  (ix: number) => number;
+    readUInt16: (ix: number) => number;
+    readUInt32: (ix: number) => number;
+    readUInt64: (ix: number) => bigint;
+    readSInt8:  (ix: number) => number;
+    readSInt16: (ix: number) => number;
+    readSInt32: (ix: number) => number;
+    readSInt64: (ix: number) => bigint;
+}
+
+export function HelperDataView(view: DataView, bigEndian: boolean): HelperDataView {
+    (<HelperDataView>view).readUInt8  = view.getUint8.bind(view);
+    (<HelperDataView>view).readUInt16 = (ix: number) => view.getUint16(ix, !bigEndian);
+    (<HelperDataView>view).readUInt32 = (ix: number) => view.getUint32(ix, !bigEndian);
+    (<HelperDataView>view).readUInt64 = (ix: number) => view.getBigUint64(ix, !bigEndian);
+    (<HelperDataView>view).readSInt8  = (ix: number) => view.getInt8(ix);
+    (<HelperDataView>view).readSInt16 = (ix: number) => view.getInt16(ix, !bigEndian);
+    (<HelperDataView>view).readSInt32 = (ix: number) => view.getInt32(ix, !bigEndian);
+    (<HelperDataView>view).readSInt64 = (ix: number) => view.getBigInt64(ix, !bigEndian);
+    return view as HelperDataView;
+}

@@ -2,7 +2,7 @@ import * as ELF from './types/index.js';
 //import { readProgramHeaderEntries } from './segments';
 //import { virtualAddressToFileOffset } from './elf';
 import { isSymbolSection, readSectionHeaderEntries } from './sections.js';
-import { Reader } from './reader.js';
+import { HelperDataView, Reader } from './reader.js';
 import { add, toNumberSafe } from './biginthelpers.js';
 
 /** Options for reading an ELF file. */
@@ -12,7 +12,6 @@ export interface OpenOptions {
 };
 
 async function updateSymbolAddressesAndLoadSymbols(elf: ELF.File, reader: Reader, loadSymbols: boolean) {
-    const readerSize = reader.size();
     const elftype = elf.header.type;
     if (elftype === ELF.Type.Executable || elftype === ELF.Type.Relocatable || elftype === ELF.Type.Shared || elftype === ELF.Type.RPL) {
         for (const section of elf.sections) {
@@ -75,32 +74,29 @@ export async function readElf(reader: Reader, options: OpenOptions): Promise<ELF
     const bigEndian = eiData !== 1;
     const abi = eiAbi as ELF.ABI;
     const sizeLeft = bits === 32 ? 0x24 : 0x30;
-    const headerview = await reader.view(sizeLeft);
-    const readUInt16 = (ix: number) => headerview.getUint16(ix, !bigEndian);
-    const readUInt32 = (ix: number) => headerview.getUint32(ix, !bigEndian);
-    const readUInt64 = (ix: number) => headerview.getBigUint64(ix, !bigEndian);
+    const headerView = HelperDataView(await reader.view(sizeLeft), bigEndian);
 
     let ix = 0;
-    const eType = readUInt16(ix); ix += 2;
-    const eMachine = readUInt16(ix); ix += 2;
-    const eVersion = readUInt32(ix); ix += 4;
+    const eType = headerView.readUInt16(ix); ix += 2;
+    const eMachine = headerView.readUInt16(ix); ix += 2;
+    const eVersion = headerView.readUInt32(ix); ix += 4;
     let eEntry, ePHOff, eSHOff;
     if (bits === 32) {
-        eEntry = readUInt32(ix); ix += 4;
-        ePHOff = readUInt32(ix); ix += 4;
-        eSHOff = readUInt32(ix); ix += 4;
+        eEntry = headerView.readUInt32(ix); ix += 4;
+        ePHOff = headerView.readUInt32(ix); ix += 4;
+        eSHOff = headerView.readUInt32(ix); ix += 4;
     } else {
-        eEntry = readUInt64(ix); ix += 8;
-        ePHOff = toNumberSafe(readUInt64(ix)); ix += 8;
-        eSHOff = toNumberSafe(readUInt64(ix)); ix += 8;
+        eEntry = headerView.readUInt64(ix); ix += 8;
+        ePHOff = toNumberSafe(headerView.readUInt64(ix)); ix += 8;
+        eSHOff = toNumberSafe(headerView.readUInt64(ix)); ix += 8;
     }
-    const eFlags = readUInt32(ix); ix += 4;
-    const eHSize = readUInt16(ix); ix += 2;
-    const ePHEntSize = readUInt16(ix); ix += 2;
-    const ePHNum = readUInt16(ix); ix += 2;
-    const eSHEntSize = readUInt16(ix); ix += 2;
-    const eSHNum = readUInt16(ix); ix += 2;
-    const eSHStrNdx = readUInt16(ix); ix += 2;
+    const eFlags = headerView.readUInt32(ix); ix += 4;
+    const eHSize = headerView.readUInt16(ix); ix += 2;
+    const ePHEntSize = headerView.readUInt16(ix); ix += 2;
+    const ePHNum = headerView.readUInt16(ix); ix += 2;
+    const eSHEntSize = headerView.readUInt16(ix); ix += 2;
+    const eSHNum = headerView.readUInt16(ix); ix += 2;
+    const eSHStrNdx = headerView.readUInt16(ix); ix += 2;
 
     if (bits === 32 && eHSize !== 0x34 || bits === 64 && eHSize !== 0x40) throw new Error('Not a valid ELF file. Header size is invalid');
 

@@ -1,5 +1,5 @@
 import * as ELF from './types/index.js';
-import { Reader } from './reader.js';
+import { HelperDataView, Reader } from './reader.js';
 import { divide, toNumberSafe } from './biginthelpers.js';
 import { decode, encode } from './encoding.js';
 import { RPL } from './rplsections.js';
@@ -27,13 +27,13 @@ export function getString(strings: { [index: number]: string; }, index: number):
     return str || '<error>';
 }
 
-async function readStringSection(fh: Reader, offset: number | bigint, size: number | bigint): Promise<{ [index: number]: string }> {
-    const tmp = await fh.read(Number(size), Number(offset));
+export async function readStringSection(section: ELF.Section, fh?: Reader): Promise<{ [index: number]: string }> {
+    const tmp = fh ? await fh.read(Number(section.size), Number(section.offset)) : section.data;
     let ix = 0;
     const strings: {
         [index: number]: string;
     } = {};
-    for (let i = 0; i < size; i++) {
+    for (let i = 0; i < section.size; i++) {
         if (tmp[i] === 0) {
             const slen = i - ix;
             if (slen > 0) {
@@ -45,37 +45,31 @@ async function readStringSection(fh: Reader, offset: number | bigint, size: numb
     return strings;
 }
 
-async function readSymbolsSection(fh: Reader, offset: number, size: number,
+export async function readSymbolsSection(fh: Reader | Uint8Array, offset: number, size: number,
     entsize: number, bigEndian: boolean, bits: number, sectionIndex: number): Promise<ELF.Symbol[]> {
 
-    const fhsize = fh.size();
     const num = divide(size, entsize);
-    let ix = 0;
     const symbols: ELF.Symbol[] = [];
     for (let i = 0; i < num; i++) {
-        const view = await fh.view(entsize, offset + i * entsize);
-        const readUint8 = view.getUint8.bind(view);
-        const readUInt16 = (ix: number) => view.getUint16(ix, !bigEndian);
-        const readUInt32 = (ix: number) => view.getUint32(ix, !bigEndian);
-        const readUInt64 = (ix: number) => view.getBigUint64(ix, !bigEndian);
+        const view = HelperDataView(fh instanceof Uint8Array ? new DataView(fh.buffer) : await fh.view(entsize, offset + i * entsize), bigEndian);
 
         let ix = 0;
 
         let name, info, other, shndx, value, size;
         if (bits === 32) {
-            name = readUInt32(ix); ix += 4;
-            value = readUInt32(ix); ix += 4;
-            size = readUInt32(ix); ix += 4;
-            info = readUint8(ix); ix += 1;
-            other = readUint8(ix); ix += 1;
-            shndx = readUInt16(ix); ix += 2;
+            name  = view.readUInt32(ix); ix += 4;
+            value = view.readUInt32(ix); ix += 4;
+            size  = view.readUInt32(ix); ix += 4;
+            info  = view.readUInt8(ix); ix += 1;
+            other = view.readUInt8(ix); ix += 1;
+            shndx = view.readUInt16(ix); ix += 2;
         } else {
-            name = readUInt32(ix); ix += 4;
-            info = readUint8(ix); ix += 1;
-            other = readUint8(ix); ix += 1;
-            shndx = readUInt16(ix); ix += 2;
-            value = readUInt64(ix); ix += 8;
-            size = Number(readUInt64(ix)); ix += 8;
+            name =  view.readUInt32(ix); ix += 4;
+            info =  view.readUInt8(ix); ix += 1;
+            other = view.readUInt8(ix); ix += 1;
+            shndx = view.readUInt16(ix); ix += 2;
+            value = view.readUInt64(ix); ix += 8;
+            size = Number(view.readUInt64(ix)); ix += 8;
         }
         //const type = info & 0xF;
         //const binding = info >> 4;
@@ -94,36 +88,32 @@ async function readSymbolsSection(fh: Reader, offset: number, size: number,
     return symbols;
 }
 
-async function readRelocationSection(fh: Reader, offset: number, size: number,
+export async function readRelocationSection(fh: Reader | Uint8Array, offset: number, size: number,
     entsize: number, bigEndian: boolean, bits: number, rela: boolean): Promise<ELF.Relocation[]> {
 
     const num = toNumberSafe(divide(size, entsize));
     const relocations = new Array<ELF.Relocation>(num);
 
     for (let i = 0; i < num; i++) {
-        const view = await fh.view(entsize, offset + i * entsize);
-        const readUInt32 = (ix: number) => view.getUint32(ix, !bigEndian);
-        const readUInt64 = (ix: number) => view.getBigUint64(ix, !bigEndian);
-        const readSInt32 = (ix: number) => view.getInt32(ix, !bigEndian);
-        const readSInt64 = (ix: number) => view.getBigInt64(ix, !bigEndian);
+        const view = HelperDataView(fh instanceof Uint8Array ? new DataView(fh.buffer) : await fh.view(entsize, offset + i * entsize), bigEndian);
 
         let ix = 0;
         let addr: number | bigint, info: number | bigint, symbolIndex: number, type: number;
         let addend: number | bigint | undefined;
 
         if (bits === 32) {
-            addr = readUInt32(ix); ix += 4;
-            info = readUInt32(ix); ix += 4;
+            addr = view.readUInt32(ix); ix += 4;
+            info = view.readUInt32(ix); ix += 4;
 
-            if (rela) addend = readSInt32(ix); ix += 4;
+            if (rela) addend = view.readSInt32(ix); ix += 4;
 
             symbolIndex = info >> 8; //? 0x######00
             type = info & 0xFF;      //? 0x000000##
         } else {
-            addr = readUInt64(ix); ix += 8;
-            info = readUInt64(ix); ix += 8;
+            addr = view.readUInt64(ix); ix += 8;
+            info = view.readUInt64(ix); ix += 8;
 
-            if (rela) addend = readSInt64(ix); ix += 8;
+            if (rela) addend = view.readSInt64(ix); ix += 8;
 
             symbolIndex = toNumberSafe(info >> BigInt(32)); //? 0x########00000000
             type = toNumberSafe(info & BigInt(0xFFFFFFFF)); //? 0x00000000########
@@ -157,36 +147,35 @@ export async function readSectionHeaderEntries(fh: Reader, sh_off: number | bigi
     const result: ELF.Section[] = new Array(sh_num);
 
     for (let i = 0; i < sh_num; i++) {
-        const view = await fh.view(sh_entsize, Number(sh_off) + i * Number(sh_entsize));
-        const readUInt32 = (ix: number) => view.getUint32(ix, !bigEndian);
-        const readUInt64 = (ix: number) => view.getBigUint64(ix, !bigEndian);
+        const view = HelperDataView(await fh.view(sh_entsize, Number(sh_off) + i * Number(sh_entsize)), bigEndian);
 
-        const name = readUInt32(0);
-        const type = readUInt32(4);
+        const name = view.readUInt32(0);
+        const type = view.readUInt32(4);
 
         let ix = 8;
         let flags, addr, offset, size, link, info, addralign, entsize;
         if (bits === 32) {
-            flags     = readUInt32(ix); ix += 4;
-            addr      = readUInt32(ix); ix += 4;
-            offset    = readUInt32(ix); ix += 4;
-            size      = readUInt32(ix); ix += 4;
-            link      = readUInt32(ix); ix += 4;
-            info      = readUInt32(ix); ix += 4;
-            addralign = readUInt32(ix); ix += 4;
-            entsize   = readUInt32(ix); ix += 4;
+            flags     = view.readUInt32(ix); ix += 4;
+            addr      = view.readUInt32(ix); ix += 4;
+            offset    = view.readUInt32(ix); ix += 4;
+            size      = view.readUInt32(ix); ix += 4;
+            link      = view.readUInt32(ix); ix += 4;
+            info      = view.readUInt32(ix); ix += 4;
+            addralign = view.readUInt32(ix); ix += 4;
+            entsize   = view.readUInt32(ix); ix += 4;
         } else {
-            flags     = toNumberSafe(readUInt64(ix)); ix += 8;
-            addr      = readUInt64(ix); ix += 8;
-            offset    = toNumberSafe(readUInt64(ix)); ix += 8;
-            size      = toNumberSafe(readUInt64(ix)); ix += 8;
-            link      = readUInt32(ix); ix += 4;
-            info      = readUInt32(ix); ix += 4;
-            addralign = toNumberSafe(readUInt64(ix)); ix += 8;
-            entsize   = toNumberSafe(readUInt64(ix)); ix += 8;
+            flags     = toNumberSafe(view.readUInt64(ix)); ix += 8;
+            addr      = view.readUInt64(ix); ix += 8;
+            offset    = toNumberSafe(view.readUInt64(ix)); ix += 8;
+            size      = toNumberSafe(view.readUInt64(ix)); ix += 8;
+            link      = view.readUInt32(ix); ix += 4;
+            info      = view.readUInt32(ix); ix += 4;
+            addralign = toNumberSafe(view.readUInt64(ix)); ix += 8;
+            entsize   = toNumberSafe(view.readUInt64(ix)); ix += 8;
         }
 
         let section = new ELF.Section();
+        section.data = offset === 0 ? new Uint8Array(0) : new Uint8Array(view.buffer.slice(offset, offset + size));
         section.index = i;
         section.nameOffset = name;
         section.type = type;
@@ -198,7 +187,6 @@ export async function readSectionHeaderEntries(fh: Reader, sh_off: number | bigi
         section.info = info;
         section.addrAlign = addralign;
         section.entSize = entsize;
-        section.data = offset === 0 ? Buffer.alloc(0) : Buffer.from(view.buffer.slice(offset, offset + size))
 
         result[i] = section;
     }
@@ -206,9 +194,8 @@ export async function readSectionHeaderEntries(fh: Reader, sh_off: number | bigi
     // process string tables
     for (const section of result) {
         if (isStringSection(section)) {
-            const { size, offset } = section;
             if (section.flags & ELF.SectionFlags.Compressed) section.strings = {};
-            else section.strings = await readStringSection(fh, offset, size);
+            else section.strings = await readStringSection(section, fh);
         }
     }
 
@@ -219,14 +206,14 @@ export async function readSectionHeaderEntries(fh: Reader, sh_off: number | bigi
             if (section.flags & ELF.SectionFlags.Compressed) section.symbols = [];
             else section.symbols = await readSymbolsSection(fh, offset, size, entSize, bigEndian, bits, index);
 
-            if (link >= 0 && link < result.length) {
+            /*if (link >= 0 && link < result.length) {
                 const stringsSection = result[link];
                 if (isStringSection(stringsSection)) {
                     //fillInSymbolNames(section.symbols, stringsSection.strings);
                 } else {
                     // TODO: error: linked section is not a string table
                 }
-            }
+            }*/
         }
 
         if (isRelocationSection(section)) {

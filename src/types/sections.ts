@@ -7,36 +7,50 @@ import * as Enums from './enums.js';
 import { Relocation } from './relocation.js';
 import { File } from './index.js';
 import { isStringSection, getString } from '../sections.js';
+import { trimBuffer } from '../encoding.js';
+import hashwasm from 'hash-wasm';
+import zlib from 'zlib';
 
 export class Section extends Structs.Section {
     constructor() { super(); }
 
     /** Get the section's name. */
-    public getName(elf: File): string {
+    public getName(elf: File): '<null>' | '<compressed>' | string {
         if (elf.header.shstrIndex >= elf.sections.length) throw new Error('Invalid ELF file. Section header string table index is invalid.');
+        if (elf.header.shstrIndex === 0) return 'SECTION' + this.index;
 
-        const strSection = elf.sections[elf.header.shstrIndex];
-        if (!isStringSection(strSection)) throw new Error('Invalid ELF file. Section header string table index is not a string table.');
+        const shstrtab = elf.sections[elf.header.shstrIndex];
+        if (!isStringSection(shstrtab)) throw new Error('Invalid ELF file. Section header string table index is not a string table.');
+        if (shstrtab.flags & Enums.SectionFlags.Compressed) return '<compressed>';
 
-        if (strSection.strings) {
-            if (this.nameOffset === 0) return this.type ? 'SECTION' + this.index : '<null>';
-            else return getString(strSection.strings, this.nameOffset);
-        }
-        return '<null>';
+        if (this.nameOffset === 0) return this.type ? 'SECTION' + this.index : '<null>';
+        else return getString(shstrtab.strings, this.nameOffset);
     }
 
     /** The index of this section */
     public index: number = -1;
     /** The raw binary data of this section */
-    public data: Uint8Array = new Uint8Array();
+    public data: Uint8Array = new Uint8Array(0);
 
     /** The uncompressed size of this section in bytes, if it's compressed.
       * If the section is not compressed, this is identical to {@link Section.size}. */
-    get sizeUncompressed() {
+    get sizeUncompressed(): number {
         if (!(this.flags & Enums.SectionFlags.Compressed)) return this.size;
-        if (this.data.byteLength < 4) throw new Error('Invalid or corrupt ELF section. Section is compressed, but the compressed size is invalid.');
-        return Buffer.from(this.data.slice(0, 4)).readUInt32BE();
+        if (this.data.byteLength < 4) throw new Error('Invalid or corrupt ELF section. Section is flagged as compressed, but is too small.');
+        return new DataView(this.data).getUint32(0);
     }
+
+    get crc32Hash(): Promise<number> {
+        return (async () => {
+            if (this.type === Enums.SectionType.RPLCrcs || this.offset === 0 || this.data.length === 0) return 0x00000000;
+
+            let data: Uint8Array = this.data;
+            if (this.flags & Enums.SectionFlags.Compressed) data = new Uint8Array(trimBuffer(zlib.inflateSync(this.data.slice(4))));
+
+            return Number('0x' + await hashwasm.crc32(data));
+        })();
+    }
+
 
     /** Offset from the start of the {@link Header.shstrIndex section headers string table} 
       * to the address of this section's name in said table, if any. */
@@ -50,7 +64,7 @@ export class Section extends Structs.Section {
     /** The absolute offset of the section in the file. */
     get offset() { return this._offset }
     /** The size of this section, in bytes. */
-    get size() { return this._size }
+    get size() { return this.offset === 0 ? this._size : this.data.byteLength }
     /** A section linked to this section. For example for a symbol section the
       * linked section is a string table section providing names for symbols. */
     get link() { return this._link }
@@ -84,7 +98,14 @@ export class Section extends Structs.Section {
     }
     set size(size: uint32) {
         assert(size >= 0x00 && 0xFFFFFFFF >= size, `${size} does not fit inside a uint32.`);
-        this._size = size;
+        if (this.offset === 0) {
+            this._size = size; return;
+        }
+        if (size === this.data.byteLength) return;
+        if (size > this.data.byteLength)
+            this.data = new Uint8Array(trimBuffer(Buffer.concat([new Uint8Array(this.data), new Uint8Array(size - this.data.byteLength)])));
+        else
+            this.data = new Uint8Array(this.data.slice(0, size));
     }
     set link(link: uint32) {
         assert(link >= 0x00 && 0xFFFFFFFF >= link, `${link} does not fit inside a uint32.`);

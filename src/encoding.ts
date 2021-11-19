@@ -66,3 +66,19 @@ function encodeNumber(number: number, bytesAlign: number = 0, signed: boolean = 
     const tmpstr: string = signed ? toHexSInt((bytesAlign * 8) || 8, number) : number.toString(16);
     return Buffer.from(tmpstr.padStart(tmpstr.length + Number(tmpstr.length % 2 !== 0), '0').padStart(bytesAlign * 2, '0'), 'hex');
 }
+
+//function decodeString(buffer: Buffer, offset: number, length: number, encoding: BufferEncoding = 'utf-8'): string {
+//    return buffer.toString(encoding, offset, offset + length);
+//}
+//
+//function decodeNumber(buffer: Buffer, offset: number, length: number, signed: boolean = false): number {
+//    const tmpstr: string = buffer.toString('hex', offset, offset + length);
+//    return signed ? parseInt(tmpstr, 16) : parseInt(tmpstr, 16);
+//}
+
+export function trimBuffer(buf: ArrayBufferView, offset?: number, length?: number): ArrayBuffer;
+export function trimBuffer(buf: ArrayBuffer, offset: number, length?: number): ArrayBuffer;
+export function trimBuffer(buf: ArrayBufferView | ArrayBuffer, offset: number = 0, length: number = buf.byteLength): ArrayBuffer {
+    if (buf instanceof ArrayBuffer) return buf.slice(offset, offset + length);
+    return buf.buffer.slice(buf.byteOffset + offset, buf.byteOffset + offset + length);
+}

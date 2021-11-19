@@ -46,7 +46,7 @@ export function packElf(elf: ELF.File): Buffer {
             writeBufferToBuffer(output.data, RPL.packFileInfoSection(section), section.offset); continue;
         }
 
-        writeBufferToBuffer(output.data, Buffer.from(section.data), section.offset);
+        writeBufferToBuffer(output.data, Buffer.from(section.data.buffer, section.data.byteOffset, section.data.byteLength), section.offset);
     }
     
     const align = (output.data.byteLength + 3 & -4) - output.data.byteLength;

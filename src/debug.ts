@@ -11,7 +11,8 @@ type TableColor = 'red' | 'green' | 'yellow' | 'white' | 'blue' | 'magenta' | 'c
 
 const hex = (n: number, prefix = '0x', pad = 0): string => prefix + n.toString(16).toUpperCase().padStart(pad, '0');
 
-export function hexdump(buf: Buffer): string {
+export function hexdump(buf: Buffer | ArrayBuffer): string {
+    if (buf instanceof ArrayBuffer) buf = Buffer.from(buf, 0, buf.byteLength);
     const basestr = buf.toString('hex').toUpperCase();
     if (!basestr) return '';
     return basestr.match(/../g)!.join(' ').match(/(?:...?){1,16}/g)!.join('\n');
@@ -278,13 +279,13 @@ export function printSectionsCompressionInfoTable(elf: ELF.File): void {
             { name: 'Size Diff',         alignment: 'left', color: <TableColor>'green' },
             { name: 'Compression Ratio', alignment: 'right', color: <TableColor>'cyan' },
             { name: 'Space Saving',      alignment: 'right', color: <TableColor>'blue' },
+            { name: 'Zlib Header',       alignment: 'center', color: <TableColor>'yellow' },
         ]
     });
 
     let data = { ratios: [0], savings: [0] };
     sections.forEach(section => {
         let color: TableColor = 'white';
-        const name = section.getName(elf);
         if (section.type === ELF.SectionType.Null)        color = 'red';
         if (section.type === ELF.SectionType.SymTab)      color = 'cyan';
         if (section.type === ELF.SectionType.StrTab)      color = 'blue';
@@ -299,14 +300,15 @@ export function printSectionsCompressionInfoTable(elf: ELF.File): void {
 
         t.addRow({
             'Index': section.index,
-            'Name': shstrtab === null ? '<compressed>' : !shstrtab ? '<none>' : name,
+            'Name': section.getName(elf),
             'Type': hex(section.type),
             'Offset': hex(section.offset),
             'Compressed': hex(section.size),
             'Uncompressed': hex(section.sizeUncompressed),
             'Size Diff': '-' + hex(section.sizeUncompressed - section.size),
             'Compression Ratio': (section.sizeUncompressed / section.size).toFixed(1) + ' bytes : byte',
-            'Space Saving': ((1 - section.size / section.sizeUncompressed) * 100).toFixed(2) + '%'
+            'Space Saving': ((1 - section.size / section.sizeUncompressed) * 100).toFixed(2) + '%',
+            'Zlib Header': hexdump(section.data.buffer.slice(4, 6))
         }, { color: color });
     });
     t.table.title = `Compressed Sections: ${sections.length} of ${elf.sections.length} | `
