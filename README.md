@@ -1,80 +1,60 @@
 # ELFLib
-A JavaScript library to parse and write ELF files.
+A JavaScript library to parse, edit and write ELF files.
 
 
 ## Usage
 
-```js
-import * as fs from 'fs/promises';
-import { open } from 'elflib';
+```ts
+import fs from 'fs/promises';
+import elflib from 'elflib';
 
-// Parse the specified ELF file.
-const elfdata = await fs.readFile('someelffile');
-const info = await open(elfdata);
+// Parse the specified ELF file
+const elfdata: Buffer = await fs.readFile('./path/to/file.elf');
+const elf: elflib.File = await elflib.open(elfdata);
+
+// Do stuff with it
+
+// Write the file back
+const newdata: Buffer = await elflib.pack(elf);
+await fs.writeFile('./output.elf', newdata);
 ```
 
-The `open` function above will parse the ELF file header, program headers, and sections. It will also
-read the symbol table and strings. 
-
-`open` can be called with a variety of arguments. A string will open a file, a buffer, array, or blob
-will parse directly from memory, and a file handle will read from the file.
+The `open()` function above will parse the ELF file header, ~~program headers,~~ and sections. It will also read the symbol table, strings and relocations.
 
 ### Examining the data
-Several functions are provided on the elf data structure for examining information
-about symbols and translating addresses. For example, `getSymbolsInSection` will get all the symbols
-exist in a specified section, `getSymbolFileOffset` will tell you the actual file offset of a symbol
-(if possible) so you can actually read the symbol data. There are also functions for doing VMA and LMA
-stuff. Documentation is currently pending but autocomplete should work in an IDE like VS Code.
+Several functions are provided on the ELF data structure for examining information about symbols and translating addresses. For example, `getSymbolsInSection()` will get all the symbols exist in a specified section, `getSymbolFileOffset()` will tell you the actual file offset of a symbol (if possible) so you can actually read the symbol data. There are also functions for doing VMA and LMA stuff. Documentation is currently pending but autocomplete should work in an IDE like VS Code.
 
 ### BigInt and Number
-Javascript numbers are doubles. This is non-ideal for 64-bit file offsets so for 64-bit ELF files
-BigInt is used whenever the data is stored as a 64 bit number in the ELF file or where something
-refers to a memory location. This can be a pain since you can't mix arithmetic for BigInt and Number.
+Javascript numbers are doubles. This is non-ideal for 64-bit file offsets so for 64-bit ELF files BigInt is used whenever the data is stored as a 64 bit number in the ELF file or where something refers to a memory location. This can be a pain since you can't mix arithmetic for BigInt and Number.
 There isn't currently a nice solution (I mean, what can you do?), so just be aware of it.
 
 ### Terminology
 ELF and ELF tools (such as readelf) sometimes use conflicting terminology. Here is an indication of what
 things mean according to this library:
-- a **Segment** refers to a piece of data that exists in the ELF file and is to be loaded into memory at
-  a certain location. In the ELF file they are stored as *Program Header Entries*. A segment consists mainly of
-  a file offset and two memory locations, the virtual and physical memory locations.
-- a **Section** refers to the various sections stored in the ELF file. A section has an address which
-  is always a virtual (VMA) address. Each section mainly consists of a name, a type, a virtual memory location, and a size.
-  There are many kinds of sections, but the main ones are those that contain program data (either code or data), symbols,
-  and strings. elflib currently parses string and symbol sections.
-- a **Symbol** can refer to many different things, but usually refers to a *function* or *variable* used in code.
-  There are also symbols for sections and files. Symbols are used for debugging or other analysis and do not affect program execution. Symbols
-  are stored in symbol table sections and the names of symbols are stored in string table sections. Stored with the symbol is the
-  name of the symbol, the type of the symbol, the virtual memory location of the symbol, sometimes the size of the symbol,
-  and some other things.
-- a **Virtual Address** refers to the address a segment, section, or symbol has in memory. This is sometimes referred
-  to as a *VMA address* or a *memory address*.
-- a **Physical Address** refers to the address a segment, section, or symbol has in non-volatile storage. This does not refer to the
-  offset in the file. A normal ELF executable for an operating system like linux will usually have virtual addresses
-  match the physical addresses since the file can be mapped into memory wherever needed. However, in embedded systems
-  the data for virtual memory locations needs to be stored in flash somewhere. This is the physical address. This is
-  also called the *LMA address* or *load address*.  Some symbols and sections don't have a physical address (for example,
-  BSS section symbols that are cleared in memory on startup).
-- a **File Offset** refers to a location in the ELF file itself. Only segments have file offsets, but the file offset
-  can be calculated for a section or symbol if the symbol or section has a physical address.
+- A **Segment** refers to a piece of data that exists in the ELF file and is to be loaded into memory at a certain location. In the ELF file they are stored as *Program Header Entries*. A segment consists mainly of a file offset and two memory locations, the virtual and physical memory locations.
+- A **Section** refers to the various sections stored in the ELF file. A section has an address which is always a virtual (VMA) address. Each section mainly consists of a name, a type, a virtual memory location, and a size.
+There are many kinds of sections, but the main ones are those that contain program data (either code or data), symbols, and strings. elflib currently parses string, symbol and relocation sections.
+- A **Symbol** can refer to many different things, but usually refers to a *function* or *variable* used in code. There are also symbols for sections and files. Symbols are used for debugging or other analysis and do not affect program execution. Symbols are stored in symbol table sections and the names of symbols are stored in string table sections. Stored with the symbol is the name of the symbol, the type of the symbol, the virtual memory location of the symbol, sometimes the size of the symbol, and some other things.
+- A **Virtual Address** refers to the address a segment, section, or symbol has in memory. This is sometimes referred to as a *VMA address* or a *memory address*.
+- A **Physical Address** refers to the address a segment, section, or symbol has in non-volatile storage. This does not refer to the offset in the file. A normal ELF executable for an operating system like linux will usually have virtual addresses match the physical addresses since the file can be mapped into memory wherever needed. However, in embedded systems the data for virtual memory locations needs to be stored in flash somewhere. This is the physical address. This is also called the *LMA address* or *load address*.  Some symbols and sections don't have a physical address (for example, BSS section symbols that are cleared in memory on startup).
+- A **File Offset** refers to a location in the ELF file itself.
 
 ### What gets parsed
 A debug function is also provided, that spits out readelf/objdump like stuff.
-
 ```js
-import * as fs from 'fs/promises';
-import { open, debug } from 'elflib';
+import fs from 'fs/promises';
+import elflib from 'elflib';
 
-// read the ELF file
+// Read the ELF file
 const elfdata = await fs.readFile('./file.elf');
-const info = await open(elfdata);
+const elf = await elflib.open(elfdata);
 
-// generate human-readable output
-const fileinfo = debug(info);
+// Generate human-readable output
+const fileinfo = elflib.debug(elf);
 console.log(fileinfo);
 ```
 
-This will produce the following output. This may help you get an idea of what elflib parses at the moment:
+This will produce the following (slightly outdated!) output. This may help you get an idea of what elflib parses at the moment:
 
 ```
 Path: someelffile
@@ -217,44 +197,41 @@ Symbols for section #24 .symtab:
 * * *
 
 # Testing
-In order to run tests you will need to have the following programs installed and in your path
+In order to run tests you will need to have the following programs installed and in your `PATH`:
 - [gcc](https://gcc.gnu.org/)
 - [clang](https://releases.llvm.org/download.html#10.0.0)
-- [arm eabi gcc](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
-- [arm aarch32 gcc](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
-- [arm aarch64 gcc](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
-- [arm aarch64_be gcc](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
-- [riscv embedded gcc](https://github.com/xpack-dev-tools/riscv-none-embed-gcc-xpack/releases/)
-- [xtensa gcc](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/tools/idf-tools.html#xtensa-esp32-elf)
+- [arm-eabi-gcc](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads)
+- [arm-aarch32-gcc](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
+- [arm-aarch64-gcc](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
+- [arm-aarch64_be-gcc](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
+- [riscv-embedded-gcc](https://github.com/xpack-dev-tools/riscv-none-embed-gcc-xpack/releases/)
+- [xtensa-gcc](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/tools/idf-tools.html#xtensa-esp32-elf)
 
 And then build the test programs by running `testprograms/build.sh`.
 
-*Note:* just because the programs compile doesn't mean they will work or represent how one should 
-write programs for any of the given platforms. The idea is to generate executables for tests
-and the tests don't run the programs, they just expect the ELF files to contain certain things.
+*Note:* just because the programs compile doesn't mean they will work or represent how one should write programs for any of the given platforms. The idea is to generate executables for tests and the tests don't run the programs, they just expect the ELF files to contain certain things.
 
 # Roadmap
 
 **Done:**
-- [x] Read elf file, including segments and sections.
-- [x] Read symbol and string tables and relate them to sections.
+- [x] Read elf file, including ~~segments and~~ sections.
+- [x] Read symbols, relocations and string tables and relate them to sections.
 - [x] Provide functions for dealing with addresses (VMA, LMA, and file).
+- [x] Write parsed elf back to file. (Experimental)
+- [x] Support for PowerPC RPL/RPX files.
+- [x] Compression and decompression with Zlib.
 
 **TODO:**
+- [ ] **Reimplement segments and 64 bit support.**
 - [ ] Async file API.
 - [ ] Blob API.
 - [ ] Documentation.
 - [ ] Disassembly of functions.
 - [ ] Rudimentary binary analysis, especially stack analysis.
-- [ ] Demanging of C++ names (or other names for that matter).
-- [ ] Performance. Though the ELF parsing happens in an instant, the functions
-      for inspecting the structure are slow and will suffer on big files.
-- [ ] Test on more platforms. Currently we do cursory checks for x64, Risc-V and ARM Cortex-M.
-      Other platforms of interest could be MIPS, PowerPC, etc. executables for these systems should
-      load but no tests have been done.
-- [ ] A companion library for visualization. I would like to see where everything is and easily be
-      able to spot functions that are too big or in the wrong place.
-- [ ] Enough information in the ELF structure to be able to write ELF files.
+- [ ] Demangling of C++ names (or other names for that matter).
+- [ ] Performance. Though the ELF parsing happens in an instant, the functions for inspecting the structure are slow and will suffer on big files.
+- [ ] Test on more platforms. Currently we do cursory checks for x64, Risc-V, PowerPC and ARM Cortex-M. Other platforms of interest could be MIPS, etc. executables for these systems should load but no tests have been done.
+- [ ] A companion library for visualization. I would like to see where everything is and easily be able to spot functions that are too big or in the wrong place.
 
 # License
 See [LICENSE](LICENSE) which applies to all files in this repository unless otherwise specified.
