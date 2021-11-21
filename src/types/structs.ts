@@ -138,21 +138,12 @@ export namespace Structs {
         protected _info: uint32 | uint64 = 0x00000000;    //! uint32 | uint64
         /** A constant addend used to compute the value to be stored into the relocatable field. */
         protected _addend?: sint32 | sint64 = undefined;  //? sint32 | sint64
-        /** The symbol index for this relocation.
-          * @summary The symbol for this relocation is found in the section identified by the
-          * info field in the section this relocation is found in.
-          * The symbol index is taken from the info field. */
-        protected _symbolIndex: number = 0x000000;        //* 24-bit value (info >> 8)
-        /** The type of this relocation.
-          * @summary Relocation types are processor specific so the raw number is given here.
-          * The relocation type is take from the info field */
-        protected _type: uint8 = 0x00;                    //* uint8 (info & 0xFF)
     }
 
     /** RPL-exclusive file information section data structure. */
     export class RPLFileInfo {
-        /** Magic number of the RPL_FILEINFO section, always "CAFE" */
-        readonly magic = '\xCA\xFE' as const;               //? uint16
+        /** Magic number of the RPL_FILEINFO section, always 0xCAFE */
+        readonly magic = 0xCAFE as const;                    //? uint16
         protected _version: uint16 = 0x0000;                 //? uint16
         protected _textSize: uint32 = 0x00000000;            //* uint32
         protected _textAlign: uint32 = 0x00000000;           //* uint32

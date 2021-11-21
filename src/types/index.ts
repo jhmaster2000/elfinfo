@@ -20,37 +20,28 @@ export class File {
         const sections: Section[] = this.sections.filter(section => section.flags & SectionFlags.Compressed);
         if (sections.length === 0) return false;
 
-        for (const section of sections) {
-            const decompressed = await inflate(new Uint8Array(trimBuffer(section.data, 4)));
-            section.data = new Uint8Array(trimBuffer(decompressed));
-            section.flags &= ~SectionFlags.Compressed;
-            if (isStringSection(section)) section.strings = await readStringSection(section);
-        }
+        const sectionHeadersEnd = this.header.sectionHeadersOffset + this.header.sectionHeadersEntrySize * this.header.sectionHeadersEntryCount;
+        const programHeadersEnd = this.header.programHeadersOffset + this.header.programHeadersEntrySize * this.header.programHeadersEntryCount;
+        const sectionsStartOffset = sectionHeadersEnd >= programHeadersEnd ? sectionHeadersEnd : programHeadersEnd;
 
         for (const section of sections) {
-            if (isSymbolSection(section)) {
-                const { index, size, offset, entSize, link } = section;
-                section.symbols = await readSymbolsSection(
-                    section.data, offset, size, entSize, this.header.endian === Endian.Big, this.header.bits, index
-                );
-    
-                /*if (link >= 0 && link < this.sections.length) {
-                    const stringsSection = this.sections[link];
-                    if (isStringSection(stringsSection)) {
-                        //fillInSymbolNames(section.symbols, stringsSection.strings);
-                    } else {
-                        // TODO: error: linked section is not a string table
-                    }
-                }*/
-            }
-    
-            if (isRelocationSection(section)) {
-                const { size, offset, entSize } = section;
-                section.relocations = await readRelocationSection(
-                    section.data, offset, size, entSize, this.header.endian === Endian.Big, this.header.bits, section.type === SectionType.Rela
-                );
-            }
+            const decompressed = await inflate(new Uint8Array(trimBuffer(section.data, 4)));
+            section.flags &= ~SectionFlags.Compressed;
+            section.data = new Uint8Array(trimBuffer(decompressed));
+            section.size = section.data.byteLength;
+
+            if (isStringSection(section)) section.strings = readStringSection(section);
+            if (isSymbolSection(section)) section.symbols = readSymbolsSection(section, this.header.endian, this.header.bits);
+            if (isRelocationSection(section)) section.relocations = readRelocationSection(section, this.header.endian, this.header.bits);
         }
+
+        let offset = sectionsStartOffset;
+        for (const section of this.sections.filter(section => section.offset !== 0)) {
+            section.offset = offset;
+            const align = section.addrAlign === 0x4 ? 0x10 : section.addrAlign;
+            offset = Math.ceil((offset + section.size) / align) * align;
+        }
+
         return true;
     }
 }

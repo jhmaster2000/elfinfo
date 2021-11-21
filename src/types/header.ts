@@ -42,7 +42,7 @@ export class Header extends Structs.Header {
     /** The section index for the section headers string table (if any). */
     get shstrIndex(): uint16 { return this._shstrIndex }
 
-    get bits(): 0 | 32 | 64 { return this.class ? this.class === Enums.Class.ELF32 ? 32 : 64 : 0; }
+    get bits(): 32 | 64 { return this.class === Enums.Class.ELF32 ? 32 : 64; }
 
     set class(_class: Enums.Class) {
         assert(_class in Enums.Class, `${_class} is not a valid ELF.Class value.`);
@@ -114,7 +114,7 @@ export class Header extends Structs.Header {
         this._shstrIndex = shstrIndex;
     }
 
-    set bits(bits: 0 | 32 | 64) {
+    set bits(bits: 32 | 64) {
         if (!bits) this.class = Enums.Class.None;
         else if (bits === 32) this.class = Enums.Class.ELF32;
         else if (bits === 64) this.class = Enums.Class.ELF64;

@@ -152,9 +152,6 @@ export class RelocationSection extends Section {
 /** RPL-exclusive CRC hashes section. */
 export class RPLCrcSection extends Section {
     constructor() { super(); }
-
-    /** The CRC hashes of this RPL */
-    crcs: uint16[] = [];
 }
 
 /** RPL-exclusive file information section. */

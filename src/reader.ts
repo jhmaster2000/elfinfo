@@ -93,7 +93,7 @@ function errorReader(message: string): Reader {
     }
 }
 
-export function array(array: Array<number>): Reader {
+export function array(array: number[]): Reader {
     return buffer(Uint8Array.from(array));
 }
 

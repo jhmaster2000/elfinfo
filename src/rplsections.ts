@@ -1,33 +1,19 @@
-import { decode, encode } from './encoding.js';
-import { file, HelperDataView, Reader } from './reader.js';
+import { decode } from './encoding.js';
+import { HelperDataView } from './reader.js';
 import * as ELF from './types/index.js';
-import { writeBufferToBuffer } from './writer.js';
 
 export namespace RPL {
-    export async function readCrcSection(fh: Reader, offset: number, size: number, entsize: number, bigEndian: boolean): Promise<number[]> {
-        const num = size / entsize;
-        const crcs: number[] = [];
+    export function readFileInfoSection(section: ELF.Section, endian: ELF.Endian): ELF.RPLFileInfo {
+        if (section.size < 0x60) throw new Error('RPL_FILEINFO section is too small, must be at least 0x60 in size.');
 
-        for (let i = 0; i < num; i++) {
-            const view = await fh.view(entsize, offset + i * entsize);
-            const crc = view.getUint32(0, !bigEndian);
-            crcs[i] = crc;
-        }
-
-        return crcs;
-    }
-
-    export async function readFileInfoSection(fh: Reader, offset: number, size: number, bigEndian: boolean): Promise<ELF.RPLFileInfo> {
-        if (size < 0x60) throw new Error('RPL_FILEINFO section is too small, must be at least 0x60 in size.');
-
-        const view = HelperDataView(await fh.view(0x60, offset), bigEndian);
+        const view = HelperDataView(new DataView(section.data.buffer), endian === ELF.Endian.Big);
         const fileinfo: ELF.RPLFileInfo = new ELF.RPLFileInfo();
 
         let ix = 0;
         const magic: string = view.readUInt16(ix).toString(16).toUpperCase();
         if (magic !== 'CAFE') throw new Error(`RPL_FILEINFO section magic number is invalid! Expected "CAFE", got "${magic}"`);
 
-        /*fileinfo.magic             = magic;*/        ix += 2;
+        /*fileinfo.magic             = magic;*/             ix += 2;
         fileinfo.version             = view.readUInt16(ix); ix += 2;
         fileinfo.textSize            = view.readUInt32(ix); ix += 4;
         fileinfo.textAlign           = view.readUInt32(ix); ix += 4;
@@ -56,80 +42,74 @@ export namespace RPL {
         fileinfo.strings = [];
 
         // Section does not have strings
-        if (size === 0x60 || size <= fileinfo.stringsOffset) return fileinfo;
+        if (section.size === 0x60 || section.size <= fileinfo.stringsOffset) return fileinfo;
 
-        const stringData = await fh.read(size - fileinfo.stringsOffset, offset + fileinfo.stringsOffset);
+        const stringData = section.data.slice(fileinfo.stringsOffset);
         const strings: { [addr: number]: string; } = {};
 
         let strIx = 0;
-        for (let i = 0; i < size - fileinfo.stringsOffset; i++) {
+        for (let i = 0; i < section.size - fileinfo.stringsOffset; i++) {
             if (stringData[i] === 0) {
                 const slen = i - strIx;
-                if (slen > 0) strings[strIx + fileinfo.stringsOffset] = decode(stringData, strIx, slen);
-                if (slen === 0) strings[strIx + fileinfo.stringsOffset] = '';
+                if (slen > 0)   strings[fileinfo.stringsOffset + strIx] = decode(stringData, strIx, slen);
+                if (slen === 0) strings[fileinfo.stringsOffset + strIx] = '';
                 strIx = i + 1;
             }
         }
         fileinfo.strings = strings;
-
         return fileinfo;
-    }
-
-    export function isCrcSection(section: ELF.Section): section is ELF.RPLCrcSection {
-        return section.type === ELF.SectionType.RPLCrcs;
     }
 
     export function isFileInfoSection(section: ELF.Section): section is ELF.RPLFileInfoSection {
         return section.type === ELF.SectionType.RPLFileInfo;
     }
 
-    export function packCrcSection(section: ELF.RPLCrcSection): Buffer {
-        const databuf = Buffer.alloc(section.size);
-        let ix = 0;
-
-        for (const crc of section.crcs) { writeBufferToBuffer(databuf, encode(crc, 4), ix); ix += 4; }
-
-        return databuf;
+    export async function packCrcSection(section: ELF.RPLCrcSection, size: number, elf: ELF.File): Promise<Buffer> {
+        let crcs = Buffer.alloc(size);
+        for (let i = 0; i < elf.sections.length; i++) crcs.writeUInt32BE(await elf.sections[i].crc32Hash, i * section.entSize);
+        return crcs;
     }
 
     export function packFileInfoSection(section: ELF.RPLFileInfoSection): Buffer {
-        const databuf = Buffer.alloc(section.size);
+        const fileinfo = Buffer.alloc(section.size);
         let ix = 0;
-        writeBufferToBuffer(databuf, encode(parseInt(section.fileinfo.magic, 16), 2), ix); ix += 2;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.version, 2), ix); ix += 2;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.textSize, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.textAlign, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.dataSize, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.dataAlign, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.loadSize, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.loadAlign, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.tempSize, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.trampAdjust, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.sdaBase, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.sda2Base, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.stackSize, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.stringsOffset, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.flags, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.heapSize, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.tagOffset, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.minVersion, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.compressionLevel, 4, true), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.trampAddition, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.fileInfoPad, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.cafeSdkVersion, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.cafeSdkRevision, 4), ix); ix += 4;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.tlsModuleIndex, 2), ix); ix += 2;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.tlsAlignShift, 2), ix); ix += 2;
-        writeBufferToBuffer(databuf, encode(section.fileinfo.runtimeFileInfoSize, 4), ix); ix += 4;
-
+        fileinfo.writeUInt16BE(section.fileinfo.magic,               ix); ix += 2;
+        fileinfo.writeUInt16BE(section.fileinfo.version,             ix); ix += 2;
+        fileinfo.writeUInt32BE(section.fileinfo.textSize,            ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.textAlign,           ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.dataSize,            ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.dataAlign,           ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.loadSize,            ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.loadAlign,           ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.tempSize,            ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.trampAdjust,         ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.sdaBase,             ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.sda2Base,            ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.stackSize,           ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.stringsOffset,       ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.flags,               ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.heapSize,            ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.tagOffset,           ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.minVersion,          ix); ix += 4;
+        fileinfo.writeInt32BE (section.fileinfo.compressionLevel,    ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.trampAddition,       ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.fileInfoPad,         ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.cafeSdkVersion,      ix); ix += 4;
+        fileinfo.writeUInt32BE(section.fileinfo.cafeSdkRevision,     ix); ix += 4;
+        fileinfo.writeUInt16BE(section.fileinfo.tlsModuleIndex,      ix); ix += 2;
+        fileinfo.writeUInt16BE(section.fileinfo.tlsAlignShift,       ix); ix += 2;
+        fileinfo.writeUInt32BE(section.fileinfo.runtimeFileInfoSize, ix); ix += 4;
+        
         for (let key in section.fileinfo.strings) {
-            //const addr = Number(key);
             const str = section.fileinfo.strings[key];
-            const encoded = encode(str);
-            writeBufferToBuffer(databuf, encoded, ix); ix += encoded.byteLength;
-            writeBufferToBuffer(databuf, encode('\0'), ix); ix += 1;
+
+            if (fileinfo[ix] !== 0) throw new Error(
+                `Failed to pack ELF because of corrupt string section of index ${section.index}:\n` +
+                `\tString '${str}' at .strtab offset 0x${Number(key).toString(16).toUpperCase()} is overlapped by the previous string which is too long.`
+            );
+            ix += fileinfo.write(str + '\0', ix);
         }
 
-        return databuf;
+        return fileinfo;
     }
 }

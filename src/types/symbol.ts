@@ -21,8 +21,6 @@ export class Symbol extends Structs.Symbol {
 
     /** Get the symbol's name. */
     public getName(elf: File): string {
-        if (!elf) return '';
-
         let symSection = elf.sections[this.symSection] as SymbolSection;
         let strSection = elf.sections[symSection.link] as StringSection;
         return getString(strSection.strings, this.nameOffset) || '';
