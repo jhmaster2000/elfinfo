@@ -23,13 +23,12 @@ export async function packElf(elf: ELF.File): Promise<Buffer> {
     packELFSectionHeaders(elf).copy(output, elf.header.sectionHeadersOffset);
 
     const sections = elf.sections.filter(section => section.offset !== 0).sort((a, b) => a.offset - b.offset);
-
     
     for (let i = 0; i < sections.length; i++) {
         const section = sections[i];
         output = Buffer.concat([output, Buffer.alloc(section.offset - output.byteLength + section.size)]);
 
-        if (isStringSection(section)) {
+        if (isStringSection(section) && !(section.flags & ELF.SectionFlags.Compressed)) {
             const lastStringOffset = Number(Object.keys(section.strings).sort((a, b) => Number(a) - Number(b)).at(-1)!);
             if (!lastStringOffset) {
                 Buffer.from(section.data).copy(output, section.offset); continue;
@@ -39,13 +38,13 @@ export async function packElf(elf: ELF.File): Promise<Buffer> {
             packStringSection(section, size).copy(output, section.offset); continue;
         }
 
-        if (isSymbolSection(section)) {
+        if (isSymbolSection(section) && !(section.flags & ELF.SectionFlags.Compressed)) {
             const size = section.symbols.length * section.entSize;
             if (section.size !== size) section.size = size;
             packSymbolSection(section, size).copy(output, section.offset); continue;
         }
 
-        if (isRelocationSection(section)) {
+        if (isRelocationSection(section) && !(section.flags & ELF.SectionFlags.Compressed)) {
             const size = section.relocations.length * section.entSize;
             if (section.size !== size) section.size = size;
             packRelocationSection(section, size).copy(output, section.offset); continue;

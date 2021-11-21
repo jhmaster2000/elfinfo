@@ -232,8 +232,8 @@ export function packStringSection(section: ELF.StringSection, size: number): Buf
 
 export function packSymbolSection(section: ELF.SymbolSection, size: number): Buffer {
     const buf: Buffer = Buffer.alloc(size);
-    let ix = 0;
 
+    let ix = 0;
     for (let symbol of section.symbols) {
         buf.writeUInt32BE(symbol.nameOffset, ix);    ix += 4;
         buf.writeUInt32BE(Number(symbol.value), ix); ix += 4;
@@ -242,14 +242,13 @@ export function packSymbolSection(section: ELF.SymbolSection, size: number): Buf
         buf.writeUInt8(symbol.other, ix);            ix += 1;
         buf.writeUInt16BE(symbol.shndx, ix);         ix += 2;
     }
-
     return buf;
 }
 
 export function packRelocationSection(section: ELF.RelocationSection, size: number): Buffer {
     const buf: Buffer = Buffer.alloc(size);
-    let ix = 0;
 
+    let ix = 0;
     for (let rel of section.relocations) {
         buf.writeUInt32BE(Number(rel.addr), ix); ix += 4;
         buf.writeUInt32BE(Number(rel.info), ix); ix += 4;
