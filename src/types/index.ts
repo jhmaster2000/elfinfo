@@ -7,6 +7,7 @@ import zlib from 'zlib';
 import { trimBuffer } from '../encoding.js';
 import { isRelocationSection, isStringSection, isSymbolSection, readRelocationSection, readStringSection, readSymbolsSection } from '../sections.js';
 const inflate = util.promisify(zlib.inflate);
+const deflate = util.promisify(zlib.deflate);
 
 export class File {
     /** The main header of the ELF file. */
@@ -41,8 +42,36 @@ export class File {
             const align = section.addrAlign === 0x4 ? 0x10 : section.addrAlign;
             offset = Math.ceil((offset + section.size) / align) * align;
         }
-
         return true;
+    }
+
+    async compress(): Promise<boolean> {
+        const sectionHeadersEnd = this.header.sectionHeadersOffset + this.header.sectionHeadersEntrySize * this.header.sectionHeadersEntryCount;
+        const programHeadersEnd = this.header.programHeadersOffset + this.header.programHeadersEntrySize * this.header.programHeadersEntryCount;
+        const sectionsStartOffset = sectionHeadersEnd >= programHeadersEnd ? sectionHeadersEnd : programHeadersEnd;
+        const compressionBlacklist = [SectionType.NoBits, SectionType.RPLCrcs, SectionType.RPLFileInfo];
+
+        let decompressed = 0;
+        let offset = sectionsStartOffset;
+        for (const section of this.sections.filter(section => section.offset !== 0)) {
+            if (!compressionBlacklist.includes(section.type)) {
+                const compressed = Buffer.concat([Buffer.alloc(4), await deflate(section.data)]);
+                compressed.writeUInt32BE(section.sizeUncompressed, 0);
+                section.flags |= SectionFlags.Compressed;
+                section.data = new Uint8Array(trimBuffer(compressed));
+                section.size = section.data.byteLength;
+                decompressed++;
+
+                if (isStringSection(section)) section.strings = {};
+                if (isSymbolSection(section)) section.symbols = [];
+                if (isRelocationSection(section)) section.relocations = [];
+            }
+
+            section.offset = offset;
+            const align = section.addrAlign === 0x4 ? 0x10 : section.addrAlign;
+            offset = Math.ceil((offset + section.size) / align) * align;
+        }
+        return decompressed > 0;
     }
 }
 
