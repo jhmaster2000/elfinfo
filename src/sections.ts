@@ -9,7 +9,6 @@ import { RPL } from './rplsections.js';
 export function getString(strings: { [index: number]: string; }, index: number): string {
     if (!Object.keys(strings).length) return '<compressed>';
     let str = strings[index];
-    //console.log(index, str);
     if (!str) {
         // both GCC and clang have a tendency to
         // point to the middle of a string if the

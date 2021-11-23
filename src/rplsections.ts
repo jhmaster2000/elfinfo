@@ -5,13 +5,11 @@ import * as ELF from './types/index.js';
 export namespace RPL {
     export function readFileInfoSection(section: ELF.Section, endian: ELF.Endian): ELF.RPLFileInfo {
         if (section.size < 0x60) throw new Error('RPL_FILEINFO section is too small, must be at least 0x60 in size.');
-        console.log(section);
         const view = HelperDataView(new DataView(section.data.buffer), endian === ELF.Endian.Big);
         const fileinfo: ELF.RPLFileInfo = new ELF.RPLFileInfo();
 
         let ix = 0;
         const magic: string = view.readUInt16(ix).toString(16).toUpperCase();
-        console.log(`RPL_FILEINFO`, view);
         if (magic !== 'CAFE') throw new Error(`RPL_FILEINFO section magic number is invalid! Expected "CAFE", got "${magic}"`);
 
         /*fileinfo.magic             = magic;*/             ix += 2;
