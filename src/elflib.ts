@@ -1,17 +1,18 @@
 #!/usr/bin/env node
 import { open } from './index.js';
 import { debug } from './debug.js';
+import fs from 'fs';
 
-(async function main(): Promise<void> {
-    const programs = process.argv.slice(2);
+main(process.argv.slice(2)).then(null, console.error);
 
-    if (programs.length) {
-        for (const program of programs) {
-            const elf = await open(program);
+async function main(args: string[]): Promise<void> {
+    if (args.length) {
+        for (const program of args) {
+            const elf = await open(fs.readFileSync(program));
             console.log(debug(elf));
             console.log('\n\n');
         }
     } else {
         console.log(`Usage: elflib [program]`);
     }
-})().catch(console.error);
+}

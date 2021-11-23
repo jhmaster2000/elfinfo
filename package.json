@@ -34,7 +34,7 @@
         "js": "tsc && node dist/index.js",
         "build": "tsc",
         "test": "tsc && node dist/tests/",
-        "_prepare": "tsc",
+        "prepare": "tsc",
         "_prepublishOnly": "tsc && node dist/tests/",
         "gendocs": "jsdoc2md --files src/*.ts --template README.template.md --configure ./jsdoc2md.json  > README.md"
     },
@@ -49,7 +49,7 @@
         "dist/**/*.js"
     ],
     "bin": {
-        "elflib": "dist/src/elflib.js"
+        "elflib": "dist/elflib.js"
     },
     "dependencies": {
         "hash-wasm": "^4.9.0"
