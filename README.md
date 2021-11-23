@@ -224,7 +224,6 @@ And then build the test programs by running `testprograms/build.sh`.
 **TODO:**
 - [ ] **Reimplement segments and 64 bit support.**
 - [ ] Async file API.
-- [ ] Blob API.
 - [ ] Documentation.
 - [ ] Disassembly of functions.
 - [ ] Rudimentary binary analysis, especially stack analysis.

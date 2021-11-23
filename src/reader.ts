@@ -1,6 +1,5 @@
-import { FileHandle, open as fsopen } from 'fs/promises';
+import { FileHandle } from 'fs/promises';
 import * as fs from 'fs';
-import * as path from 'path';
 
 interface BufferState {
     array?: ArrayBuffer,
@@ -32,48 +31,22 @@ function bufferRead(state: BufferState, length: number, position?: number): Prom
     }
 }
 
-async function asyncFileRead(file: FileHandle | undefined, length: number, position?: number): Promise<Uint8Array> {
-    if (!file) throw 'File not open';
-    const result = new Uint8Array(length);
-    const { bytesRead } = await file.read(result, 0, length, position);
-
-    if (bytesRead < length) return result.slice(0, bytesRead);
-    else return result;
-}
-
-function syncFileRead(file: number, length: number, position?: number): Promise<Uint8Array> {
-    return new Promise((resolve, reject) => {
-        const result = new Uint8Array(length);
-        fs.read(file, result, 0, length, position ?? null, (err: any, bytesRead: number) => {
-            if (err) {
-                reject(err);
-            } else {
-                if (bytesRead < length) resolve(result.slice(0, bytesRead))
-                else                    resolve(result);
-            }
-        });
-    })
-}
-
 function createView(from: Uint8Array): DataView {
     return new DataView(from.buffer, from.byteOffset, from.byteLength);
 }
 
-/**
-  * An abstract interface for a file-reading interface. This is used
-  * by the ELF parser to read the file from many different sources. */
+/** An abstract interface for a file-reading interface.
+  * This is used by the ELF parser to read the file from many different sources. */
 export interface Reader {
     /** The path of the file, if it is a file. */
     path?: string,
     /** Called to open the data source asynchronously. */
     open(): Promise<void>;
-    /**
-      * Called to read data from the data source.
+    /** Called to read data from the data source.
       * @param length The amount of data to read.
       * @param position If specified, seek to this position first. */
     read(length: number, position?: number): Promise<Uint8Array>;
-    /**
-      * Called to return a data view interface to the data source.
+    /** Called to return a data view interface to the data source.
       * @param length The size of the data view.
       * @param position The position of the data view. */
     view(length: number, position?: number): Promise<DataView>;
@@ -83,29 +56,13 @@ export interface Reader {
     close(): Promise<void>;
 }
 
-function errorReader(message: string): Reader {
-    return {
-        open: () => Promise.reject(message),
-        read: (a, b) => Promise.reject(message),
-        view: (a, b) => Promise.reject(message),
-        size: () => -1,
-        close: () => Promise.reject(message)
-    }
-}
-
-export function array(array: number[]): Reader {
-    return buffer(Uint8Array.from(array));
-}
-
 export function buffer<TBuffer extends Uint8Array>(buffer: TBuffer | ArrayBuffer): Reader {
     const state: BufferState = {
         array: buffer instanceof Uint8Array ? buffer.buffer : buffer,
-        offset: 0,
+        offset: buffer instanceof Uint8Array ? buffer.byteOffset : 0,
         position: 0,
         size: buffer.byteLength
     };
-
-    if (buffer instanceof Uint8Array) state.offset = buffer.byteOffset;
 
     return {
         open: () => Promise.resolve(),
@@ -116,93 +73,23 @@ export function buffer<TBuffer extends Uint8Array>(buffer: TBuffer | ArrayBuffer
     }
 }
 
-export function asyncfile(fh: FileHandle, ownshandle?: boolean): Reader {
-    if (!fs) return errorReader('No filesystem');
-
-    const state = { fh, size: 0, ownshandle };
-    return {
-        // open checks if the file handle is still valid
-        // and gets the size
-        open: () => state.fh.stat().then(ss => { state.size = ss.size; }),
-        read: (length, position) => asyncFileRead(state.fh, length, position),
-        view: (length, position) => asyncFileRead(state.fh, length, position).then(createView),
-        size: () => state.size,
-        close: () => state.ownshandle ? state.fh.close() : Promise.resolve()
-    }
+export function array(array: number[]): Reader {
+    return buffer(Uint8Array.from(array));
 }
 
-export function syncfile(handle: number, ownshandle?: boolean): Reader {
-    if (!fs) return errorReader('No filesystem');
-
-    const state = { ownshandle, handle, size: 0 };
-    return {
-        open: () => new Promise((resolve, reject) => fs.fstat(state.handle, (e, ss) => {
-            // open just checks if the file handle is still valid
-            if (e) {
-                reject(e);
-            } else {
-                state.size = ss.size;
-                resolve();
-            }
-        })),
-        read: (length, position) => syncFileRead(state.handle, length, position),
-        view: (length, position) => syncFileRead(state.handle, length, position).then(createView),
-        size: () => state.size,
-        close: () => new Promise((resolve, reject) => {
-            if (state.ownshandle) {
-                fs.close(state.handle, e => {
-                    if (e) reject(e);
-                    else resolve();
-                })
-            } else {
-                resolve();
-            }
-        })
-    };
+export async function fileHandle(fh: FileHandle): Promise<Reader> {
+    await fh.stat();
+    return buffer(await fh.readFile());
 }
 
-export function file(elfpath: string): Reader {
-    if (!fs) return errorReader('No filesystem');
-
-    const state = { path: elfpath, fh: undefined as FileHandle | undefined, size: 0 };
-    return {
-        open: () => fsopen(state.path, 'r').then(fh => {
-            state.fh = fh;
-            return fh.stat().then(ss => { state.size = ss.size });
-        }),
-        read: (length, position) => asyncFileRead(state.fh, length, position),
-        view: (length, position) => asyncFileRead(state.fh, length, position).then(createView),
-        size: () => state.size,
-        close: () => state.fh ? state.fh.close() : Promise.resolve(),
-        path: path.resolve(elfpath)
-    }
+export function fileDescriptor(handle: number): Reader {
+    fs.fstatSync(handle);
+    return buffer(fs.readFileSync(handle));
 }
 
-/** Blob for the browser and future node */
-export interface Blob {
-    readonly size: number;
-    arrayBuffer(): Promise<ArrayBuffer>;
-}
-
-export function blob(item: Blob): Reader {
-    const state: BufferState = {
-        offset: 0,
-        position: 0,
-        size: 0
-    }
-
-    return {
-        open: () => item.arrayBuffer().then(ab => {
-            state.array = ab;
-            state.offset = 0;
-            state.position = 0;
-            state.size = ab.byteLength;
-        }),
-        close: () => Promise.resolve(),
-        size: () => state.size,
-        read: (length, position) => bufferRead(state, length, position),
-        view: (length, position) => bufferRead(state, length, position).then(createView)
-    }
+export function filePath(path: string): Reader {
+    fs.accessSync(path, fs.constants.R_OK);
+    return buffer(fs.readFileSync(path));
 }
 
 export interface HelperDataView extends DataView {
