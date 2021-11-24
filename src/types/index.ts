@@ -6,8 +6,8 @@ import util from 'util';
 import zlib from 'zlib';
 import { trimBuffer } from '../encoding.js';
 import { isRelocationSection, isStringSection, isSymbolSection, readRelocationSection, readStringSection, readSymbolsSection } from '../sections.js';
-const inflate = util.promisify(zlib.inflate);
-const deflate = util.promisify(zlib.deflate);
+//const inflate = util.promisify(zlib.inflate);
+//const deflate = util.promisify(zlib.deflate);
 
 export class File {
     /** The main header of the ELF file. */
@@ -22,7 +22,7 @@ export class File {
         if (sections.length === 0) return false;
 
         for (const section of sections) {
-            const decompressed = await inflate(new Uint8Array(trimBuffer(section.data, 4)));
+            const decompressed = zlib.inflateSync(new Uint8Array(trimBuffer(section.data, 4)));
             section.flags &= ~SectionFlags.Compressed;
             section.data = new Uint8Array(trimBuffer(decompressed));
 
@@ -34,7 +34,7 @@ export class File {
         return true;
     }
 
-    async compress(): Promise<boolean> {
+    async compress(compressionLevel?: -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9): Promise<boolean> {
         const compressionBlacklist = [SectionType.NoBits, SectionType.RPLCrcs, SectionType.RPLFileInfo];
         const sections = this.sections.filter(section => {
             return section.offset !== 0 && !(section.flags & SectionFlags.Compressed) && !compressionBlacklist.includes(section.type)
@@ -42,7 +42,11 @@ export class File {
         if (sections.length === 0) return false;
 
         for (const section of sections) {
-            const compressed = Buffer.concat([Buffer.alloc(4), await deflate(section.data)]);
+            const compressed = Buffer.concat([
+                Buffer.alloc(4),
+                zlib.deflateSync(section.data, { level: compressionLevel })
+            ]);
+            
             compressed.writeUInt32BE(section.sizeUncompressed, 0);
             if (compressed.byteLength > section.sizeUncompressed) continue;
 
