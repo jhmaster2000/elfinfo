@@ -37,7 +37,7 @@ export class Header extends Structs.Header {
     get programHeadersEntryCount(): uint16 { return this._programHeadersEntryCount }
     /** The size of 1 section header entry. */
     get sectionHeadersEntrySize(): uint16 { return this._sectionHeadersEntrySize }
-    /** The total number of program section entries in the file. */
+    /** The total number of section header entries in the file. */
     get sectionHeadersEntryCount(): uint16 { return this._sectionHeadersEntryCount }
     /** The section index for the section headers string table (if any). */
     get shstrIndex(): uint16 { return this._shstrIndex }

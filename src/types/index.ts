@@ -61,9 +61,10 @@ export class File {
         return true;
     }
 
-    /** Updates the file offset of all sections. */
+    /** Updates the headers of all sections. */
     updateSectionHeaders(): void {
-        const sectionHeadersEnd = this.header.sectionHeadersOffset + this.header.sectionHeadersEntrySize * this.header.sectionHeadersEntryCount;
+        this.header.sectionHeadersEntryCount = this.sections.length;
+        const sectionHeadersEnd = this.header.sectionHeadersOffset + this.header.sectionHeadersEntrySize * this.sections.length;
         const programHeadersEnd = this.header.programHeadersOffset + this.header.programHeadersEntrySize * this.header.programHeadersEntryCount;
         const sectionsStartOffset = sectionHeadersEnd >= programHeadersEnd ? sectionHeadersEnd : programHeadersEnd;
         const sections = this.sections.filter(section => section.offset !== 0).sort((a, b) => a.offset - b.offset);

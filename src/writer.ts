@@ -17,7 +17,7 @@ export async function packElf(elf: ELF.File): Promise<Buffer> {
     if (elf.header.programHeadersEntryCount !== 0 || /*elf.segments.length !== 0 ||*/ elf.header.programHeadersOffset !== 0)
         console.warn('ELF Segment and program headers packing is not currently supported. Remaining ELF data will still attempt to be packed.');
 
-    let output = Buffer.alloc(elf.header.sectionHeadersOffset + (elf.header.sectionHeadersEntryCount * elf.header.sectionHeadersEntrySize));
+    let output = Buffer.alloc(elf.header.sectionHeadersOffset + (elf.sections.length * elf.header.sectionHeadersEntrySize));
     packELFHeader(elf).copy(output, 0);
     elf.updateSectionHeaders();
     packELFSectionHeaders(elf).copy(output, elf.header.sectionHeadersOffset);
@@ -67,7 +67,7 @@ function packELFHeader(elf: ELF.File): Buffer {
     header.writeUInt16BE(elf.header.programHeadersEntrySize,  ix); ix += 2;
     header.writeUInt16BE(elf.header.programHeadersEntryCount, ix); ix += 2;
     header.writeUInt16BE(elf.header.sectionHeadersEntrySize,  ix); ix += 2;
-    header.writeUInt16BE(elf.header.sectionHeadersEntryCount, ix); ix += 2;
+    header.writeUInt16BE(elf.sections.length,                 ix); ix += 2;
     header.writeUInt16BE(elf.header.shstrIndex,               ix); ix += 2;
 
     return header;
@@ -75,7 +75,7 @@ function packELFHeader(elf: ELF.File): Buffer {
 
 /** Pack the section header table of an ELF file to binary. */
 export function packELFSectionHeaders(elf: ELF.File): Buffer {
-    const sectionHeaders: Buffer = Buffer.alloc(elf.header.sectionHeadersEntryCount * elf.header.sectionHeadersEntrySize);
+    const sectionHeaders: Buffer = Buffer.alloc(elf.sections.length * elf.header.sectionHeadersEntrySize);
     let ix = 0;
 
     elf.sections.forEach((section: ELF.Section) => {
