@@ -44,6 +44,8 @@ export class File {
         for (const section of sections) {
             const compressed = Buffer.concat([Buffer.alloc(4), await deflate(section.data)]);
             compressed.writeUInt32BE(section.sizeUncompressed, 0);
+            if (compressed.byteLength > section.sizeUncompressed) continue;
+
             section.flags |= SectionFlags.Compressed;
             section.data = new Uint8Array(trimBuffer(compressed));
 
