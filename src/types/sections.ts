@@ -6,7 +6,7 @@ import { Symbol as ELFSymbol } from './symbol.js';
 import * as Enums from './enums.js';
 import { Relocation } from './relocation.js';
 import { File } from './index.js';
-import { isStringSection, getString } from '../sections.js';
+import { isStringSection, getString, packStringSection, packSymbolSection, packRelocationSection } from '../sections.js';
 import { trimBuffer } from '../encoding.js';
 import hashwasm from 'hash-wasm';
 import zlib from 'zlib';
@@ -30,7 +30,11 @@ export class Section extends Structs.Section {
     /** The index of this section */
     public index: number = -1;
     /** The raw binary data of this section */
-    public data: Uint8Array = new Uint8Array(0);
+    protected _data: Uint8Array = new Uint8Array(0);
+
+    /** The raw binary data of this section */
+    get data(): Uint8Array { return this._data }
+    set data(data: Uint8Array) { this._data = data; }
 
     /** The uncompressed size of this section in bytes, if it's compressed.
       * If the section is not compressed, this is identical to {@link Section.size}. */
@@ -46,11 +50,9 @@ export class Section extends Structs.Section {
 
             let data: Uint8Array = this.data;
             if (this.flags & Enums.SectionFlags.Compressed) data = new Uint8Array(trimBuffer(zlib.inflateSync(this.data.slice(4))));
-
             return Number('0x' + await hashwasm.crc32(data));
         })();
     }
-
 
     /** Offset from the start of the {@link Header.shstrIndex section headers string table} 
       * to the address of this section's name in said table, if any. */
@@ -127,7 +129,20 @@ export class Section extends Structs.Section {
 
 /** A string table section. */
 export class StringSection extends Section {
-    constructor() { super(); }
+    get size(): number {
+        if (this.flags & Enums.SectionFlags.Compressed) return this._data.byteLength;
+        const lastStringOffset = Number(Object.keys(this.strings).sort((a, b) => Number(a) - Number(b)).at(-1)!);
+        if (!lastStringOffset) return 0;
+        return lastStringOffset + new TextEncoder().encode(this.strings[lastStringOffset]).byteLength + 1;
+    }
+
+    get data(): Uint8Array {
+        if (this.flags & Enums.SectionFlags.Compressed) return this._data;
+        this._data = new Uint8Array(packStringSection(this, this.size));
+        return this._data;
+    }
+
+    set data(data: Uint8Array) { this._data = data; }
 
     /** The strings parsed from this section in the case of a string table section. */
     strings: { [index: number]: string } = {};
@@ -135,7 +150,18 @@ export class StringSection extends Section {
 
 /** A symbol table section. */
 export class SymbolSection extends Section {
-    constructor() { super(); }
+    get size() {
+        if (this.flags & Enums.SectionFlags.Compressed) return this._data.byteLength;
+        return this.symbols.length * this.entSize;
+    }
+
+    get data(): Uint8Array {
+        if (this.flags & Enums.SectionFlags.Compressed) return this._data;
+        this._data = new Uint8Array(packSymbolSection(this, this.size));
+        return this._data;
+    }
+
+    set data(data: Uint8Array) { this._data = data; }
 
     /** The symbols parsed from this section. */
     symbols: ELFSymbol[] = [];
@@ -143,21 +169,28 @@ export class SymbolSection extends Section {
 
 /** A relocation table section. */
 export class RelocationSection extends Section {
-    constructor() { super(); }
+    get size() {
+        if (this.flags & Enums.SectionFlags.Compressed) return this._data.byteLength;
+        return this._size = this.relocations.length * this.entSize;
+    }
+
+    get data(): Uint8Array {
+        if (this.flags & Enums.SectionFlags.Compressed) return this._data;
+        this._data = new Uint8Array(packRelocationSection(this, this.size));
+        return this._data;
+    }
+
+    set data(data: Uint8Array) { this._data = data; }
 
     /** The relocations parsed from this section. */
     relocations: Relocation[] = [];
 }
 
 /** RPL-exclusive CRC hashes section. */
-export class RPLCrcSection extends Section {
-    constructor() { super(); }
-}
+export class RPLCrcSection extends Section {}
 
 /** RPL-exclusive file information section. */
 export class RPLFileInfoSection extends Section {
-    constructor() { super(); }
-
     /** The parsed RPL file information. */
     fileinfo: RPLFileInfo = new RPLFileInfo();
 }

@@ -214,6 +214,8 @@ export function packSymInfo(symIdx: number, type: number): number {
 }
 
 export function packStringSection(section: ELF.StringSection, size: number): Buffer {
+    if (size <= 1) return Buffer.alloc(1);
+    if (size === 2) return Buffer.alloc(2);
     const buf: Buffer = Buffer.alloc(size);
     
     let ix = 1;

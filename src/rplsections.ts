@@ -63,8 +63,8 @@ export namespace RPL {
         return section.type === ELF.SectionType.RPLFileInfo;
     }
 
-    export async function packCrcSection(section: ELF.RPLCrcSection, size: number, elf: ELF.File): Promise<Buffer> {
-        let crcs = Buffer.alloc(size);
+    export async function packCrcSection(section: ELF.RPLCrcSection, elf: ELF.File): Promise<Buffer> {
+        let crcs = Buffer.alloc(elf.sections.length * section.entSize);
         for (let i = 0; i < elf.sections.length; i++) crcs.writeUInt32BE(await elf.sections[i].crc32Hash, i * section.entSize);
         return crcs;
     }

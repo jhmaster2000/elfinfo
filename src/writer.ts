@@ -1,5 +1,4 @@
 import { RPL } from './rplsections.js';
-import { isRelocationSection, isStringSection, isSymbolSection, packRelocationSection, packStringSection, packSymbolSection } from './sections.js';
 import * as ELF from './types/index.js';
 
 /** @deprecated Write a buffer of data to a larger buffer from an offset */
@@ -20,6 +19,7 @@ export async function packElf(elf: ELF.File): Promise<Buffer> {
 
     let output = Buffer.alloc(elf.header.sectionHeadersOffset + (elf.header.sectionHeadersEntryCount * elf.header.sectionHeadersEntrySize));
     packELFHeader(elf).copy(output, 0);
+    elf.updateSectionHeaders();
     packELFSectionHeaders(elf).copy(output, elf.header.sectionHeadersOffset);
 
     const sections = elf.sections.filter(section => section.offset !== 0).sort((a, b) => a.offset - b.offset);
@@ -28,32 +28,8 @@ export async function packElf(elf: ELF.File): Promise<Buffer> {
         const section = sections[i];
         output = Buffer.concat([output, Buffer.alloc(section.offset - output.byteLength + section.size)]);
 
-        if (isStringSection(section) && !(section.flags & ELF.SectionFlags.Compressed)) {
-            const lastStringOffset = Number(Object.keys(section.strings).sort((a, b) => Number(a) - Number(b)).at(-1)!);
-            if (!lastStringOffset) {
-                Buffer.from(section.data).copy(output, section.offset); continue;
-            }
-            const size = lastStringOffset + new TextEncoder().encode(section.strings[lastStringOffset]).byteLength + 1;
-            if (section.size !== size) section.size = size;
-            packStringSection(section, size).copy(output, section.offset); continue;
-        }
-
-        if (isSymbolSection(section) && !(section.flags & ELF.SectionFlags.Compressed)) {
-            const size = section.symbols.length * section.entSize;
-            if (section.size !== size) section.size = size;
-            packSymbolSection(section, size).copy(output, section.offset); continue;
-        }
-
-        if (isRelocationSection(section) && !(section.flags & ELF.SectionFlags.Compressed)) {
-            const size = section.relocations.length * section.entSize;
-            if (section.size !== size) section.size = size;
-            packRelocationSection(section, size).copy(output, section.offset); continue;
-        }
-
         if (section.type === ELF.SectionType.RPLCrcs) {
-            const size = elf.sections.length * section.entSize;
-            if (section.size !== size) section.size = size;
-            (await RPL.packCrcSection(section, size, elf)).copy(output, section.offset); continue;
+            (await RPL.packCrcSection(section, elf)).copy(output, section.offset); continue;
         }
 
         if (RPL.isFileInfoSection(section)) {
@@ -63,9 +39,8 @@ export async function packElf(elf: ELF.File): Promise<Buffer> {
         Buffer.from(section.data).copy(output, section.offset);
     }
     
-    const align = (output.byteLength + 3 & -4) - output.byteLength;
-    if (align !== 0) Buffer.concat([output, Buffer.alloc(align)]);
-
+    const align = (output.byteLength + 15 & -16) - output.byteLength;
+    if (align !== 0) return Buffer.concat([output, Buffer.alloc(align)]);
     return output;
 }
 
@@ -104,6 +79,8 @@ export function packELFSectionHeaders(elf: ELF.File): Buffer {
     let ix = 0;
 
     elf.sections.forEach((section: ELF.Section) => {
+        if (section.type === ELF.SectionType.RPLCrcs) section.size = elf.sections.length * section.entSize;
+
         sectionHeaders.writeUInt32BE(section.nameOffset,   ix); ix += 4;
         sectionHeaders.writeUInt32BE(section.type,         ix); ix += 4;
         sectionHeaders.writeUInt32BE(section.flags,        ix); ix += 4;
