@@ -1,6 +1,18 @@
 # ELFLib
 A JavaScript library to parse, edit and write ELF files.
 
+> **Warning**
+> **Archived Project**
+>
+> This fork of [elfinfo](https://github.com/cilliemalan/elfinfo) has been discontinued and never reached a stable stage. It is NOT usable.
+>
+> The primary goals of this fork were to implement writing/saving and support for Wii U RPX/RPL ELF files.
+>
+> For the second goal, it has been achieved by the new project [rpxlib](https://github.com/jhmaster2000/rpxlib) which was written from scratch and also does support writing/saving, however it ONLY supports Wii U RPX/RPL ELF files.
+>
+> If you are looking for a way to write and save generic ELF files, I'm afraid I have no solution for you here at the moment.
+>
+> The README past this point may be outdated or inaccurate with regards to the state of the last commit on this repository.
 
 ## Usage
 
